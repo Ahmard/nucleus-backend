@@ -1,0 +1,95 @@
+use crate::helpers::auth::get_user_id;
+use crate::helpers::http::{IdPathParam, QueryParams};
+use crate::helpers::responder::{
+    json_error_message, json_invalid_uuid_response, json_success, json_success_message,
+};
+use crate::http::middlewares::auth_middleware::AuthMiddleware;
+use crate::models::project::ProjectForm;
+use crate::models::DBPool;
+use crate::repositories::project_repository::ProjectRepository;
+use crate::services::project_service::ProjectService;
+use actix_web::web::{Data, Json, Path, Query, ServiceConfig};
+use actix_web::{delete, get, post, put, HttpMessage, HttpRequest, HttpResponse};
+
+pub fn project_controller(cfg: &mut ServiceConfig) {
+    cfg.service(index);
+    cfg.service(create);
+    cfg.service(update);
+    cfg.service(delete);
+}
+
+#[get("")]
+async fn index(
+    pool: Data<DBPool>,
+    req: HttpRequest,
+    q: Query<QueryParams>,
+    _: AuthMiddleware,
+) -> HttpResponse {
+    let user_id = get_user_id(req.extensions());
+    let projects = ProjectRepository.list_by_user_id(pool.get_ref(), user_id, q.into_inner());
+    json_success(projects.unwrap())
+}
+
+#[post("")]
+async fn create(
+    pool: Data<DBPool>,
+    form: Json<ProjectForm>,
+    req: HttpRequest,
+    _: AuthMiddleware,
+) -> HttpResponse {
+    let project = ProjectService.create(
+        pool.get_ref(),
+        get_user_id(req.extensions()),
+        form.name.clone(),
+        form.description.clone(),
+    );
+
+    json_success(project)
+}
+
+#[put("{id}")]
+async fn update(
+    pool: Data<DBPool>,
+    form: Json<ProjectForm>,
+    mut param: Path<IdPathParam>,
+    req: HttpRequest,
+    _: AuthMiddleware,
+) -> HttpResponse {
+    let id = param.get_uuid();
+    if id.is_err() {
+        return json_invalid_uuid_response();
+    }
+
+    let result = ProjectService.update(
+        pool.get_ref(),
+        id.unwrap(),
+        get_user_id(req.extensions()),
+        form.name.clone(),
+        form.description.clone(),
+    );
+
+    if result.is_err() {
+        return json_error_message(result.err().unwrap().to_string().as_str());
+    }
+
+    json_success(result.unwrap())
+}
+
+#[delete("{id}")]
+async fn delete(
+    pool: Data<DBPool>,
+    mut param: Path<IdPathParam>,
+    req: HttpRequest,
+    _: AuthMiddleware,
+) -> HttpResponse {
+    let id = param.get_uuid();
+    if id.is_err() {
+        return json_invalid_uuid_response();
+    }
+
+    ProjectService
+        .delete(pool.get_ref(), id.unwrap(), get_user_id(req.extensions()))
+        .expect("Failed to delete project");
+
+    json_success_message("project deleted")
+}

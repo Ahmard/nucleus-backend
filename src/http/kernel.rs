@@ -25,11 +25,10 @@ pub fn register_routes(actix_config: &mut ServiceConfig) {
 
     for route in registered {
         let path = route.route.as_str();
-        log::debug!("Path: {}, Length: {}", path, path.len());
+        log::debug!("Route Group: {}", path);
 
         if path.len() == 0 {
             actix_config.configure(route.controller);
-            log::info!("Nothing here");
         } else {
             actix_config.service(web::scope(path).configure(route.controller));
         }
@@ -41,7 +40,7 @@ pub fn register_routes(actix_config: &mut ServiceConfig) {
 pub fn setup_cors() -> Cors {
     Cors::default()
         .allowed_origin(env::var("FRONTEND_ADDRESS").unwrap().as_str())
-        .allowed_methods(vec!["GET", "POST"])
+        .allowed_methods(vec!["GET", "POST", "PUT", "PATCH", "DELETE"])
         .allowed_headers(vec![header::AUTHORIZATION, header::ACCEPT])
         .allowed_header(header::CONTENT_TYPE)
         .max_age(3600)
