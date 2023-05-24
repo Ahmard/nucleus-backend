@@ -68,6 +68,10 @@ pub fn json_unauthorized_message(message: &str) -> HttpResponse {
     json_error_message_status(message, StatusCode::UNAUTHORIZED)
 }
 
+pub fn json_invalid_uuid_response() -> HttpResponse {
+    json_error_message("Your provided ID is invalid, please inspect it")
+}
+
 pub enum Responder {
     HtmlTemplate(String, Context, StatusCode),
     Redirect(String, StatusCode),

@@ -1,3 +1,4 @@
+use crate::helpers::db::current_timestamp;
 use crate::helpers::error_messages::db_failed_to_execute;
 use crate::helpers::get_db_conn;
 use crate::helpers::string::password_hash;
@@ -26,8 +27,8 @@ impl UserRepository {
             email: data.email,
             status: user_stringy_status(UserStatus::ACTIVE).parse().unwrap(),
             password: password_hash(data.password),
-            created_at: chrono::Local::now().naive_local(),
-            updated_at: chrono::Local::now().naive_local(),
+            created_at: current_timestamp(),
+            updated_at: current_timestamp(),
             deleted_at: None,
         };
 

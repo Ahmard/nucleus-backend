@@ -5,7 +5,10 @@ use diesel::r2d2::ConnectionManager;
 use diesel::MysqlConnection;
 use r2d2::PooledConnection;
 
+pub mod auth;
+pub mod db;
 pub mod error_messages;
+pub mod http;
 pub mod responder;
 pub mod string;
 

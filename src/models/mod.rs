@@ -1,6 +1,7 @@
 #![allow(clippy::extra_unused_lifetimes)]
 
-mod label;
+pub mod label;
+pub mod project;
 pub mod user;
 
 use diesel::{r2d2::ConnectionManager, MysqlConnection};
