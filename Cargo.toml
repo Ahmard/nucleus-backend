@@ -1,0 +1,24 @@
+[package]
+name = "nucleus"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+actix-web = "4"
+actix-files = "0.6"
+actix-cors = "0.6"
+tera = "1"
+dotenv = "0.15"
+log = "0.4"
+r2d2 = "0.8"
+rust-argon2 = "1"
+env_logger = "0.10"
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+actix-session = { version = "0.7", features = ["cookie-session"] }
+diesel = { version = "2", features = ["mysql", "r2d2", "uuid", "chrono"] }
+jsonwebtoken = "8.3.0"
