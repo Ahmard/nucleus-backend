@@ -1,2 +1,2 @@
-ALTER TABLE `projects` DROP FOREIGN KEY `fk_project_user_id`;
-DROP TABLE `projects`;
+ALTER TABLE projects DROP CONSTRAINT fk_project_user_id;
+DROP TABLE projects;
