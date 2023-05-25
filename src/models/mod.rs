@@ -1,5 +1,6 @@
 #![allow(clippy::extra_unused_lifetimes)]
 
+pub mod expense;
 pub mod label;
 pub mod project;
 pub mod user;

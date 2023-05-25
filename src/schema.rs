@@ -1,6 +1,20 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
+    expenses (expense_id) {
+        expense_id -> Char,
+        user_id -> Char,
+        project_id -> Char,
+        amount -> Bigint,
+        narration -> Varchar,
+        spent_at -> Timestamp,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+        deleted_at -> Nullable<Timestamp>,
+    }
+}
+
+diesel::table! {
     labels (label_id) {
         label_id -> Char,
         user_id -> Char,
@@ -50,10 +64,12 @@ diesel::table! {
     }
 }
 
+diesel::joinable!(expenses -> projects (project_id));
+diesel::joinable!(expenses -> users (user_id));
 diesel::joinable!(labels -> users (user_id));
 diesel::joinable!(project_labels -> labels (label_id));
 diesel::joinable!(project_labels -> projects (project_id));
 diesel::joinable!(project_labels -> users (user_id));
 diesel::joinable!(projects -> users (user_id));
 
-diesel::allow_tables_to_appear_in_same_query!(labels, project_labels, projects, users,);
+diesel::allow_tables_to_appear_in_same_query!(expenses, labels, project_labels, projects, users,);

@@ -9,6 +9,7 @@ pub mod auth;
 pub mod db;
 pub mod error_messages;
 pub mod http;
+pub mod number;
 pub mod responder;
 pub mod string;
 
