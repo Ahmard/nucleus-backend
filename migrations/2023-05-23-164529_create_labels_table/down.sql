@@ -1,2 +1,2 @@
-ALTER TABLE `labels` DROP FOREIGN KEY `fk_label_user_id`;
-DROP TABLE `labels`;
+ALTER TABLE labels DROP CONSTRAINT fk_label_user_id;
+DROP TABLE labels;

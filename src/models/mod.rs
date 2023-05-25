@@ -5,7 +5,7 @@ pub mod label;
 pub mod project;
 pub mod user;
 
-use diesel::{r2d2::ConnectionManager, MysqlConnection};
+use diesel::{r2d2::ConnectionManager, PgConnection};
 
 // type alias to use in multiple places
-pub type DBPool = r2d2::Pool<ConnectionManager<MysqlConnection>>;
+pub type DBPool = r2d2::Pool<ConnectionManager<PgConnection>>;
