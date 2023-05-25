@@ -1,11 +1,13 @@
 use crate::helpers::auth::get_user_id;
 use crate::helpers::http::{IdPathParam, QueryParams};
 use crate::helpers::responder::{
-    json_error_message, json_invalid_uuid_response, json_success, json_success_message,
+    json_entity_not_found_response, json_error_message, json_invalid_uuid_response, json_success,
+    json_success_message,
 };
 use crate::http::middlewares::auth_middleware::AuthMiddleware;
 use crate::models::project::ProjectForm;
 use crate::models::DBPool;
+use crate::repositories::expense_repository::ExpenseRepository;
 use crate::repositories::project_repository::ProjectRepository;
 use crate::services::project_service::ProjectService;
 use actix_web::web::{Data, Json, Path, Query, ServiceConfig};
@@ -14,8 +16,10 @@ use actix_web::{delete, get, post, put, HttpMessage, HttpRequest, HttpResponse};
 pub fn project_controller(cfg: &mut ServiceConfig) {
     cfg.service(index);
     cfg.service(create);
+    cfg.service(show);
     cfg.service(update);
     cfg.service(delete);
+    cfg.service(expenses);
 }
 
 #[get("")]
@@ -45,6 +49,31 @@ async fn create(
     );
 
     json_success(project)
+}
+
+#[get("{id}")]
+async fn show(
+    pool: Data<DBPool>,
+    mut param: Path<IdPathParam>,
+    req: HttpRequest,
+    _: AuthMiddleware,
+) -> HttpResponse {
+    let id = param.get_uuid();
+    if id.is_err() {
+        return json_invalid_uuid_response();
+    }
+
+    let result = ProjectRepository.find_owned_by_id(
+        pool.get_ref(),
+        id.unwrap(),
+        get_user_id(req.extensions()),
+    );
+
+    if result.is_err() {
+        return json_entity_not_found_response("project");
+    }
+
+    json_success(result.unwrap())
 }
 
 #[put("{id}")]
@@ -92,4 +121,21 @@ async fn delete(
         .expect("Failed to delete project");
 
     json_success_message("project deleted")
+}
+
+#[get("{id}/expenses")]
+async fn expenses(
+    pool: Data<DBPool>,
+    mut param: Path<IdPathParam>,
+    q: Query<QueryParams>,
+    _: AuthMiddleware,
+) -> HttpResponse {
+    let id = param.get_uuid();
+    if id.is_err() {
+        return json_invalid_uuid_response();
+    }
+
+    let projects =
+        ExpenseRepository.list_by_project_id(pool.get_ref(), id.unwrap(), q.into_inner());
+    json_success(projects.unwrap())
 }

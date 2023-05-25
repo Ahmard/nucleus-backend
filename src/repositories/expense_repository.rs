@@ -35,6 +35,26 @@ impl ExpenseRepository {
             .get_results::<(Expense, Project)>(conn.deref_mut())
     }
 
+    pub fn list_by_project_id(
+        &mut self,
+        pool: &DBPool,
+        id: Uuid,
+        mut query_params: QueryParams,
+    ) -> QueryResult<Vec<(Expense, Project)>> {
+        let mut conn = get_db_conn(pool);
+        let builder = expenses::table
+            .inner_join(projects::table)
+            .filter(expenses::project_id.eq(id.to_string()))
+            .filter(expenses::deleted_at.is_null())
+            .order_by(expenses::created_at.desc())
+            .limit(query_params.get_limit());
+
+        let search_format = format!("%{}%", query_params.get_search_query());
+        builder
+            .filter(expenses::narration.like(search_format))
+            .get_results::<(Expense, Project)>(conn.deref_mut())
+    }
+
     pub fn create(
         &mut self,
         pool: &DBPool,
