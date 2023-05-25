@@ -12,7 +12,6 @@ use crate::services::expense_service::ExpenseService;
 use actix_web::web::{Data, Json, Path, Query, ServiceConfig};
 use actix_web::{delete, get, post, put, HttpMessage, HttpRequest, HttpResponse};
 use chrono::NaiveDateTime;
-use log::info;
 use std::str::FromStr;
 use uuid::Uuid;
 

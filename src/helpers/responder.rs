@@ -72,6 +72,10 @@ pub fn json_invalid_uuid_response() -> HttpResponse {
     json_error_message("Your provided ID is invalid, please inspect it")
 }
 
+pub fn json_entity_not_found_response(entity: &str) -> HttpResponse {
+    json_error_message(format!("Such {} does not exists", entity).as_str())
+}
+
 pub enum Responder {
     HtmlTemplate(String, Context, StatusCode),
     Redirect(String, StatusCode),
