@@ -1,7 +1,7 @@
 #![allow(clippy::extra_unused_lifetimes)]
 
 use diesel::{Associations, Insertable, Queryable, QueryableByName};
-use diesel::sql_types::{VarChar};
+use diesel::sql_types::{VarChar, Nullable};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -34,12 +34,12 @@ pub struct ExpenseForm {
 }
 #[derive(QueryableByName, Serialize)]
 pub struct ExpenseAggregate {
-    #[diesel(sql_type = VarChar)]
-    pub year_expenses: String,
-    #[diesel(sql_type = VarChar)]
-    pub month_expenses: String,
-    #[diesel(sql_type = VarChar)]
-    pub week_expenses: String,
-    #[diesel(sql_type = VarChar)]
-    pub today_expenses: String,
+    #[diesel(sql_type = Nullable<VarChar>)]
+    pub year_expenses: Option<String>,
+    #[diesel(sql_type = Nullable<VarChar>)]
+    pub month_expenses: Option<String>,
+    #[diesel(sql_type = Nullable<VarChar>)]
+    pub week_expenses: Option<String>,
+    #[diesel(sql_type = Nullable<VarChar>)]
+    pub today_expenses: Option<String>,
 }
