@@ -2,9 +2,9 @@
 
 diesel::table! {
     expenses (expense_id) {
-        expense_id -> Bpchar,
-        user_id -> Bpchar,
-        project_id -> Bpchar,
+        expense_id -> Uuid,
+        user_id -> Uuid,
+        project_id -> Uuid,
         amount -> Int8,
         narration -> Varchar,
         spent_at -> Timestamp,
@@ -16,8 +16,8 @@ diesel::table! {
 
 diesel::table! {
     labels (label_id) {
-        label_id -> Bpchar,
-        user_id -> Bpchar,
+        label_id -> Uuid,
+        user_id -> Uuid,
         name -> Varchar,
         module -> Varchar,
         created_at -> Timestamp,
@@ -28,10 +28,10 @@ diesel::table! {
 
 diesel::table! {
     project_labels (project_label_id) {
-        project_label_id -> Bpchar,
-        user_id -> Bpchar,
-        project_id -> Bpchar,
-        label_id -> Bpchar,
+        project_label_id -> Uuid,
+        user_id -> Uuid,
+        project_id -> Uuid,
+        label_id -> Uuid,
         created_at -> Timestamp,
         updated_at -> Timestamp,
         deleted_at -> Nullable<Timestamp>,
@@ -40,8 +40,8 @@ diesel::table! {
 
 diesel::table! {
     projects (project_id) {
-        project_id -> Bpchar,
-        user_id -> Bpchar,
+        project_id -> Uuid,
+        user_id -> Uuid,
         name -> Varchar,
         description -> Varchar,
         created_at -> Timestamp,
@@ -52,7 +52,7 @@ diesel::table! {
 
 diesel::table! {
     users (user_id) {
-        user_id -> Bpchar,
+        user_id -> Uuid,
         first_name -> Varchar,
         last_name -> Varchar,
         email -> Varchar,

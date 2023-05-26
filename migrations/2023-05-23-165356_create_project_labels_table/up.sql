@@ -1,9 +1,9 @@
 CREATE TABLE project_labels
 (
-    project_label_id CHAR(36)  NOT NULL UNIQUE PRIMARY KEY,
-    user_id          CHAR(36)  NOT NULL,
-    project_id       CHAR(36)  NOT NULL,
-    label_id         CHAR(36)  NOT NULL,
+    project_label_id UUID  NOT NULL UNIQUE PRIMARY KEY,
+    user_id          UUID  NOT NULL,
+    project_id       UUID  NOT NULL,
+    label_id         UUID  NOT NULL,
     created_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at       TIMESTAMP          DEFAULT NULL

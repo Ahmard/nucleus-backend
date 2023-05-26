@@ -2,6 +2,7 @@ use actix_web::http::StatusCode;
 use actix_web::web::{Data, Json, ServiceConfig};
 use actix_web::{get, post, HttpMessage, HttpRequest, HttpResponse};
 use diesel::result::DatabaseErrorInformation;
+use crate::helpers::auth::get_user_id;
 
 use crate::helpers::responder::{
     json, json_error_message, json_success, json_success_message, json_unauthorized_message,
@@ -22,7 +23,7 @@ pub fn auth_controller(cfg: &mut ServiceConfig) {
 
 #[post("login")]
 async fn login(pool: Data<DBPool>, data: Json<LoginForm>) -> HttpResponse {
-    let result = AuthService {}.login(pool.get_ref(), data.email.clone(), data.password.clone());
+    let result = AuthService.login(pool.get_ref(), data.email.clone(), data.password.clone());
 
     if result.is_err() {
         return json_unauthorized_message(result.err().unwrap().as_str());
@@ -33,9 +34,7 @@ async fn login(pool: Data<DBPool>, data: Json<LoginForm>) -> HttpResponse {
 
 #[get("me")]
 async fn me(pool: Data<DBPool>, req: HttpRequest, _: AuthMiddleware) -> HttpResponse {
-    let ext = req.extensions();
-    let user_id = ext.get::<uuid::Uuid>().unwrap();
-    let user_lookup = UserRepository {}.find_by_id(pool.get_ref(), user_id.to_string());
+    let user_lookup = UserRepository.find_by_id(pool.get_ref(), get_user_id(req.extensions()));
 
     if user_lookup.is_err() {
         return json_unauthorized_message("Invalid auth token");
@@ -46,13 +45,14 @@ async fn me(pool: Data<DBPool>, req: HttpRequest, _: AuthMiddleware) -> HttpResp
 
 #[post("logout")]
 async fn logout() -> HttpResponse {
+    AuthService.logout();
     json_success_message("Logged out successfully")
 }
 
 #[post("register")]
 async fn register(pool: Data<DBPool>, form: Json<RegisterForm>) -> HttpResponse {
     let result =
-        actix_web::web::block(move || UserRepository {}.create(pool.get_ref(), form.into_inner()))
+        actix_web::web::block(move || UserRepository.create(pool.get_ref(), form.into_inner()))
             .await
             .expect("Failed to create user");
 

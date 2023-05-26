@@ -1,7 +1,7 @@
 CREATE TABLE projects
 (
-    project_id  CHAR(36)     NOT NULL UNIQUE PRIMARY KEY,
-    user_id     CHAR(36)     NOT NULL,
+    project_id  UUID     NOT NULL UNIQUE PRIMARY KEY,
+    user_id     UUID     NOT NULL,
     name        VARCHAR(150) NOT NULL,
     description VARCHAR(150) NOT NULL,
     created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
