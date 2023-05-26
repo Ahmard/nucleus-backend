@@ -15,6 +15,14 @@ pub struct JsonResponse<T: Serialize> {
 }
 
 #[derive(Serialize, Deserialize)]
+pub struct JsonPaginationResponse<T: Serialize> {
+    success: bool,
+    data: T,
+    pages: i64,
+    status: u16,
+}
+
+#[derive(Serialize, Deserialize)]
 pub struct JsonSuccessMessageResponse {
     message: String,
 }
@@ -29,6 +37,19 @@ pub fn json_success<T: Serialize>(data: T) -> HttpResponse {
             success: true,
             status: 200,
             data,
+        },
+        StatusCode::OK,
+    )
+}
+
+pub fn json_pagination<T: Serialize>(data: (T, i64)) -> HttpResponse {
+
+    json(
+        JsonPaginationResponse {
+            success: true,
+            status: 200,
+            data: data.0,
+            pages: data.1,
         },
         StatusCode::OK,
     )

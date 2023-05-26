@@ -1,9 +1,6 @@
 use crate::helpers::auth::get_user_id;
 use crate::helpers::http::{IdPathParam, QueryParams};
-use crate::helpers::responder::{
-    json_entity_not_found_response, json_error_message, json_invalid_uuid_response, json_success,
-    json_success_message,
-};
+use crate::helpers::responder::{json_entity_not_found_response, json_error_message, json_invalid_uuid_response, json_pagination, json_success, json_success_message};
 use crate::http::middlewares::auth_middleware::AuthMiddleware;
 use crate::models::project::ProjectForm;
 use crate::models::DBPool;
@@ -31,7 +28,7 @@ async fn index(
 ) -> HttpResponse {
     let user_id = get_user_id(req.extensions());
     let projects = ProjectRepository.list_by_user_id(pool.get_ref(), user_id, q.into_inner());
-    json_success(projects.unwrap())
+    json_pagination(projects.unwrap())
 }
 
 #[post("")]

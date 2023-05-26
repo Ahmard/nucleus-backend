@@ -8,6 +8,7 @@ use crate::schema::projects;
 use diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl, TextExpressionMethods};
 use std::ops::DerefMut;
 use uuid::Uuid;
+use crate::helpers::db_pagination::Paginate;
 
 pub struct ProjectRepository;
 
@@ -17,7 +18,7 @@ impl ProjectRepository {
         pool: &DBPool,
         id: Uuid,
         mut query_params: QueryParams,
-    ) -> QueryResult<Vec<Project>> {
+    ) -> QueryResult<(Vec<Project>, i64)> {
         let mut conn = get_db_conn(pool);
         let builder = projects::table
             .filter(projects::user_id.eq(id))
@@ -28,7 +29,9 @@ impl ProjectRepository {
         let search_format = format!("%{}%", query_params.get_search_query());
         builder
             .filter(projects::name.like(search_format))
-            .get_results::<Project>(conn.deref_mut())
+            .paginate(query_params.get_page())
+            .per_page(query_params.get_per_page())
+            .load_and_count_pages::<Project>(conn.deref_mut())
     }
 
     pub fn create(

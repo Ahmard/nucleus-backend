@@ -6,6 +6,8 @@ use uuid::{Error, Uuid};
 pub struct QueryParams {
     pub search: Option<String>,
     pub limit: Option<i64>,
+    pub page: Option<i64>,
+    pub per_page: Option<i64>,
 }
 
 #[derive(Deserialize)]
@@ -29,6 +31,20 @@ impl QueryParams {
 
     pub fn get_limit(&mut self) -> i64 {
         match self.limit.clone() {
+            None => 10,
+            Some(q) => q,
+        }
+    }
+
+    pub fn get_page(&mut self) -> i64 {
+        match self.page.clone() {
+            None => 1,
+            Some(q) => q,
+        }
+    }
+
+    pub fn get_per_page(&mut self) -> i64 {
+        match self.per_page.clone() {
             None => 10,
             Some(q) => q,
         }
