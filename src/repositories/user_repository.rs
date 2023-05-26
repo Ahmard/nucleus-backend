@@ -1,13 +1,13 @@
+use std::ops::DerefMut;
 use crate::helpers::db::current_timestamp;
 use crate::helpers::error_messages::db_failed_to_execute;
-use crate::helpers::get_db_conn;
+use crate::helpers::{get_db_conn};
 use crate::helpers::string::password_hash;
 use crate::models::user::{RegisterForm, User, UserStatus};
 use crate::models::DBPool;
 use crate::schema::users;
 use crate::schema::users::{email, user_id};
 use diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl};
-use std::ops::DerefMut;
 use uuid::Uuid;
 
 pub struct UserRepository;

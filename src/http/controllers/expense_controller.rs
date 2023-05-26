@@ -11,11 +11,13 @@ use actix_web::web::{Data, Json, Path, Query, ServiceConfig};
 use actix_web::{delete, get, post, put, HttpMessage, HttpRequest, HttpResponse};
 use chrono::NaiveDateTime;
 use std::str::FromStr;
+use log::info;
 use uuid::Uuid;
 
 pub fn expense_controller(cfg: &mut ServiceConfig) {
     cfg.service(index);
     cfg.service(create);
+    cfg.service(aggregate);
     cfg.service(show);
     cfg.service(update);
     cfg.service(delete);
@@ -31,6 +33,23 @@ async fn index(
     let user_id = get_user_id(req.extensions());
     let expenses = ExpenseRepository.list_by_user_id(pool.get_ref(), user_id, q.into_inner());
     json_pagination(expenses.unwrap())
+}
+
+#[get("aggregates")]
+async fn aggregate(
+    pool: Data<DBPool>,
+    req: HttpRequest,
+    q: Query<QueryParams>,
+    _: AuthMiddleware,
+) -> HttpResponse {
+    let user_id = get_user_id(req.extensions());
+    let result = ExpenseRepository.fetch_aggregate_by_user_id(pool.get_ref(), user_id);
+
+    if result.is_err() {
+        return json_error_message(result.err().unwrap().to_string().as_str());
+    }
+
+    json_success(result.unwrap().first().unwrap())
 }
 
 #[post("")]

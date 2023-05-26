@@ -1,15 +1,18 @@
+use std::ops::DerefMut;
+use chrono::{Datelike, Utc};
 use crate::helpers::db::current_timestamp;
 use crate::helpers::error_messages::db_failed_to_execute;
-use crate::helpers::get_db_conn;
+use crate::helpers::{get_db_conn};
 use crate::helpers::http::QueryParams;
 use crate::helpers::number::to_cent;
-use crate::models::expense::Expense;
+use crate::models::expense::{Expense, ExpenseAggregate};
 use crate::models::project::Project;
 use crate::models::DBPool;
 use crate::schema::expenses;
 use crate::schema::projects;
-use diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl, TextExpressionMethods};
-use std::ops::DerefMut;
+use diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl, sql_query, TextExpressionMethods};
+use diesel::sql_types::{Integer};
+use log::debug;
 use uuid::Uuid;
 use crate::helpers::db_pagination::Paginate;
 
@@ -44,7 +47,6 @@ impl ExpenseRepository {
         id: Uuid,
         mut query_params: QueryParams,
     ) -> QueryResult<Vec<(Expense, Project)>> {
-        let mut conn = get_db_conn(pool);
         let builder = expenses::table
             .inner_join(projects::table)
             .filter(expenses::project_id.eq(id))
@@ -55,7 +57,7 @@ impl ExpenseRepository {
         let search_format = format!("%{}%", query_params.get_search_query());
         builder
             .filter(expenses::narration.like(search_format))
-            .get_results::<(Expense, Project)>(conn.deref_mut())
+            .get_results::<(Expense, Project)>(get_db_conn(pool).deref_mut())
     }
 
     pub fn create(
@@ -150,5 +152,18 @@ impl ExpenseRepository {
             .filter(expenses::user_id.eq(user_id))
             .filter(expenses::deleted_at.is_null())
             .first::<Expense>(get_db_conn(pool).deref_mut())
+    }
+
+    pub fn fetch_aggregate_by_user_id(&mut self, pool: &DBPool, user_id: Uuid) -> QueryResult<Vec<ExpenseAggregate>> {
+        let mut sql = format!("SELECT (SELECT SUM(amount) FROM expenses WHERE EXTRACT(YEAR FROM expenses.spent_at) = {})::VARCHAR AS year_expenses", Utc::now().year());
+        sql += &*format!(", (SELECT SUM(amount) FROM expenses WHERE EXTRACT(MONTH FROM expenses.spent_at) = {})::VARCHAR AS month_expenses", Utc::now().month());
+        sql += &*format!(", (SELECT SUM(amount) FROM expenses WHERE EXTRACT(WEEK FROM expenses.spent_at) = EXTRACT(WEEK FROM NOW()))::VARCHAR AS week_expenses");
+        sql += &*format!(", (SELECT SUM(amount) FROM expenses WHERE EXTRACT(DAY FROM expenses.spent_at) = {})::VARCHAR AS today_expenses", Utc::now().day()+1);
+
+        sql_query(sql)
+            // .bind::<Integer, _>(Utc::now().year())
+            // .bind::<Integer, _>(Utc::now().month() as i32)
+            // .bind::<Integer, _>(Utc::now().day() as i32)
+            .load::<ExpenseAggregate>(get_db_conn(pool).deref_mut())
     }
 }
