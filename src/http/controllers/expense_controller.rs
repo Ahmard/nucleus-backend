@@ -1,9 +1,7 @@
 use crate::helpers::auth::get_user_id;
 use crate::helpers::db::current_timestamp;
 use crate::helpers::http::{IdPathParam, QueryParams};
-use crate::helpers::responder::{
-    json_error_message, json_invalid_uuid_response, json_success, json_success_message,
-};
+use crate::helpers::responder::{json_entity_not_found_response, json_error_message, json_invalid_uuid_response, json_success, json_success_message};
 use crate::http::middlewares::auth_middleware::AuthMiddleware;
 use crate::models::expense::ExpenseForm;
 use crate::models::DBPool;
@@ -18,6 +16,7 @@ use uuid::Uuid;
 pub fn expense_controller(cfg: &mut ServiceConfig) {
     cfg.service(index);
     cfg.service(create);
+    cfg.service(show);
     cfg.service(update);
     cfg.service(delete);
 }
@@ -51,6 +50,31 @@ async fn create(
     );
 
     json_success(expense)
+}
+
+#[get("{id}")]
+async fn show(
+    pool: Data<DBPool>,
+    mut param: Path<IdPathParam>,
+    req: HttpRequest,
+    _: AuthMiddleware,
+) -> HttpResponse {
+    let id = param.get_uuid();
+    if id.is_err() {
+        return json_invalid_uuid_response();
+    }
+
+    let result = ExpenseRepository.find_owned_by_id(
+        pool.get_ref(),
+        id.unwrap(),
+        get_user_id(req.extensions()),
+    );
+
+    if result.is_err() {
+        return json_entity_not_found_response("expense");
+    }
+
+    json_success(result.unwrap())
 }
 
 #[put("{id}")]

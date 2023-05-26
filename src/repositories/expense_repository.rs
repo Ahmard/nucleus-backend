@@ -21,7 +21,6 @@ impl ExpenseRepository {
         id: Uuid,
         mut query_params: QueryParams,
     ) -> QueryResult<Vec<(Expense, Project)>> {
-        let mut conn = get_db_conn(pool);
         let builder = expenses::table
             .inner_join(projects::table)
             .filter(expenses::user_id.eq(id.to_string()))
@@ -30,9 +29,10 @@ impl ExpenseRepository {
             .limit(query_params.get_limit());
 
         let search_format = format!("%{}%", query_params.get_search_query());
+
         builder
             .filter(expenses::narration.like(search_format))
-            .get_results::<(Expense, Project)>(conn.deref_mut())
+            .get_results::<(Expense, Project)>(get_db_conn(pool).deref_mut())
     }
 
     pub fn list_by_project_id(
@@ -76,10 +76,9 @@ impl ExpenseRepository {
             deleted_at: None,
         };
 
-        let mut conn = get_db_conn(pool);
         diesel::insert_into(expenses::table)
             .values(model.clone())
-            .execute(conn.deref_mut())
+            .execute(get_db_conn(pool).deref_mut())
             .expect(db_failed_to_execute());
 
         model
@@ -95,7 +94,6 @@ impl ExpenseRepository {
         narration: String,
         spent_at: chrono::NaiveDateTime,
     ) -> QueryResult<Expense> {
-        let mut conn = get_db_conn(pool);
         let result = self.find_owned_by_id(pool, id, user_id);
 
         if result.is_err() {
@@ -109,14 +107,13 @@ impl ExpenseRepository {
                 expenses::dsl::project_id.eq(project_id.to_string()),
                 expenses::dsl::spent_at.eq(spent_at),
             ))
-            .execute(conn.deref_mut())
+            .execute(get_db_conn(pool).deref_mut())
             .expect("Failed to update expense");
 
         Ok(result.unwrap())
     }
 
     pub fn delete(&mut self, pool: &DBPool, id: Uuid, user_id: Uuid) -> QueryResult<Expense> {
-        let mut conn = get_db_conn(pool);
         let result = self.find_owned_by_id(pool, id, user_id);
 
         if result.is_err() {
@@ -125,7 +122,7 @@ impl ExpenseRepository {
 
         diesel::update(expenses::dsl::expenses.filter(expenses::expense_id.eq(id.to_string())))
             .set(expenses::dsl::deleted_at.eq(current_timestamp()))
-            .execute(conn.deref_mut())
+            .execute(get_db_conn(pool).deref_mut())
             .expect("Failed to delete expense");
 
         Ok(result.unwrap())
@@ -133,11 +130,10 @@ impl ExpenseRepository {
 
     #[allow(dead_code)]
     pub fn find_by_id(&mut self, pool: &DBPool, id: Uuid) -> QueryResult<Expense> {
-        let mut conn = get_db_conn(pool);
         expenses::table
             .filter(expenses::expense_id.eq(id.to_string()))
             .filter(expenses::deleted_at.is_null())
-            .first::<Expense>(conn.deref_mut())
+            .first::<Expense>(get_db_conn(pool).deref_mut())
     }
 
     pub fn find_owned_by_id(
@@ -146,11 +142,10 @@ impl ExpenseRepository {
         id: Uuid,
         user_id: Uuid,
     ) -> QueryResult<Expense> {
-        let mut conn = get_db_conn(pool);
         expenses::table
             .filter(expenses::expense_id.eq(id.to_string()))
             .filter(expenses::user_id.eq(user_id.to_string()))
             .filter(expenses::deleted_at.is_null())
-            .first::<Expense>(conn.deref_mut())
+            .first::<Expense>(get_db_conn(pool).deref_mut())
     }
 }
