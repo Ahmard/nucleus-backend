@@ -14,8 +14,8 @@ use crate::models::user::User;
 #[diesel(table_name = expenses)]
 pub struct Expense {
     pub expense_id: Uuid,
-    pub project_id: Uuid,
     pub user_id: Uuid,
+    pub project_id: Uuid,
     pub amount: i64,
     pub narration: String,
     pub spent_at: chrono::NaiveDateTime,
