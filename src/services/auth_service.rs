@@ -30,7 +30,7 @@ impl AuthService {
         email: String,
         password: String,
     ) -> Result<AuthAccessData, String> {
-        let user_lookup = UserRepository {}.find_by_email(pool, email);
+        let user_lookup = UserRepository.find_by_email(pool, email);
         let context_less_error_message = Err(String::from("Invalid email address or password"));
 
         if user_lookup.is_err() {
@@ -58,7 +58,7 @@ impl AuthService {
         let iat = now.timestamp() as usize;
         let exp = (now + Duration::minutes(token_lifetime_in_minutes)).timestamp() as usize;
         let claims: TokenClaims = TokenClaims {
-            sub: user.user_id.clone(),
+            sub: user.user_id.clone().to_string(),
             exp,
             iat,
         };
@@ -68,7 +68,7 @@ impl AuthService {
             &claims,
             &EncodingKey::from_secret(env::var("APP_KEY").unwrap().as_ref()),
         )
-        .unwrap();
+            .unwrap();
 
         Ok(AuthAccessData {
             access_token: token,
@@ -77,6 +77,6 @@ impl AuthService {
         })
     }
 
-    #[allow(dead_code)]
-    fn logout() {}
+    pub fn logout(&mut self) {
+    }
 }

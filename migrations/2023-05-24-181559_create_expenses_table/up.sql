@@ -1,8 +1,8 @@
 CREATE TABLE expenses
 (
-    expense_id CHAR(36)      NOT NULL UNIQUE PRIMARY KEY,
-    user_id    CHAR(36)      NOT NULL,
-    project_id CHAR(36)      NOT NULL,
+    expense_id UUID      NOT NULL UNIQUE PRIMARY KEY,
+    user_id    UUID      NOT NULL,
+    project_id UUID      NOT NULL,
     amount     BIGINT        NOT NULL,
     narration  VARCHAR(1000) NOT NULL,
     spent_at   TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,

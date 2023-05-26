@@ -8,20 +8,19 @@ use crate::schema::users;
 use crate::schema::users::{email, user_id};
 use diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl};
 use std::ops::DerefMut;
+use uuid::Uuid;
 
-pub struct UserRepository {}
+pub struct UserRepository;
 
 impl UserRepository {
     pub fn create(&mut self, pool: &DBPool, data: RegisterForm) -> Result<User, String> {
-        let mut conn = get_db_conn(pool);
-
         let existing = self.find_by_email(pool, data.email.clone());
         if existing.is_ok() {
             return Err(String::from("User with such email address already exists"));
         }
 
         let model = User {
-            user_id: uuid::Uuid::new_v4().to_string(),
+            user_id: Uuid::new_v4(),
             first_name: data.first_name,
             last_name: data.last_name,
             email: data.email,
@@ -32,26 +31,24 @@ impl UserRepository {
             deleted_at: None,
         };
 
-        diesel::insert_into(users::dsl::users)
+        let user = diesel::insert_into(users::dsl::users)
             .values(model.clone())
-            .execute(conn.deref_mut())
+            .get_result::<User>(get_db_conn(pool).deref_mut())
             .expect(db_failed_to_execute());
 
-        Ok(model)
+        Ok(user)
     }
 
-    pub fn find_by_id(&mut self, pool: &DBPool, id: String) -> QueryResult<User> {
-        let mut conn = get_db_conn(pool);
+    pub fn find_by_id(&mut self, pool: &DBPool, id: Uuid) -> QueryResult<User> {
         users::table
             .filter(user_id.eq(id))
-            .first::<User>(conn.deref_mut())
+            .first::<User>(get_db_conn(pool).deref_mut())
     }
 
     pub fn find_by_email(&mut self, pool: &DBPool, email_addr: String) -> QueryResult<User> {
-        let mut conn = get_db_conn(pool);
         users::table
             .filter(email.eq(email_addr))
-            .first::<User>(conn.deref_mut())
+            .first::<User>(get_db_conn(pool).deref_mut())
     }
 }
 

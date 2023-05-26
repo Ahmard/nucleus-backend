@@ -2,13 +2,14 @@
 
 use diesel::{Insertable, Queryable};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use super::super::schema::users;
 
 #[derive(Debug, Serialize, Deserialize, Insertable, Queryable, Clone)]
 #[diesel(table_name = users)]
 pub struct User {
-    pub user_id: String,
+    pub user_id: Uuid,
     pub first_name: String,
     pub last_name: String,
     pub email: String,
@@ -37,5 +38,4 @@ pub struct RegisterForm {
     pub last_name: String,
     pub email: String,
     pub password: String,
-    pub password_confirmation: String,
 }

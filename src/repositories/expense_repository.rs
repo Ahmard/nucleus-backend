@@ -23,7 +23,7 @@ impl ExpenseRepository {
     ) -> QueryResult<Vec<(Expense, Project)>> {
         let builder = expenses::table
             .inner_join(projects::table)
-            .filter(expenses::user_id.eq(id.to_string()))
+            .filter(expenses::user_id.eq(id))
             .filter(expenses::deleted_at.is_null())
             .order_by(expenses::created_at.desc())
             .limit(query_params.get_limit());
@@ -44,7 +44,7 @@ impl ExpenseRepository {
         let mut conn = get_db_conn(pool);
         let builder = expenses::table
             .inner_join(projects::table)
-            .filter(expenses::project_id.eq(id.to_string()))
+            .filter(expenses::project_id.eq(id))
             .filter(expenses::deleted_at.is_null())
             .order_by(expenses::created_at.desc())
             .limit(query_params.get_limit());
@@ -65,9 +65,9 @@ impl ExpenseRepository {
         spent_at: chrono::NaiveDateTime,
     ) -> Expense {
         let model = Expense {
-            expense_id: Uuid::new_v4().to_string(),
-            user_id: user_id.to_string(),
-            project_id: project_id.to_string(),
+            expense_id: Uuid::new_v4(),
+            user_id,
+            project_id,
             amount: to_cent(amount),
             narration,
             spent_at,
@@ -100,11 +100,11 @@ impl ExpenseRepository {
             return result;
         }
 
-        diesel::update(expenses::dsl::expenses.filter(expenses::expense_id.eq(id.to_string())))
+        diesel::update(expenses::dsl::expenses.filter(expenses::expense_id.eq(id)))
             .set((
                 expenses::dsl::amount.eq(to_cent(amount)),
                 expenses::dsl::narration.eq(narration),
-                expenses::dsl::project_id.eq(project_id.to_string()),
+                expenses::dsl::project_id.eq(project_id),
                 expenses::dsl::spent_at.eq(spent_at),
             ))
             .execute(get_db_conn(pool).deref_mut())
@@ -120,7 +120,7 @@ impl ExpenseRepository {
             return result;
         }
 
-        diesel::update(expenses::dsl::expenses.filter(expenses::expense_id.eq(id.to_string())))
+        diesel::update(expenses::dsl::expenses.filter(expenses::expense_id.eq(id)))
             .set(expenses::dsl::deleted_at.eq(current_timestamp()))
             .execute(get_db_conn(pool).deref_mut())
             .expect("Failed to delete expense");
@@ -131,7 +131,7 @@ impl ExpenseRepository {
     #[allow(dead_code)]
     pub fn find_by_id(&mut self, pool: &DBPool, id: Uuid) -> QueryResult<Expense> {
         expenses::table
-            .filter(expenses::expense_id.eq(id.to_string()))
+            .filter(expenses::expense_id.eq(id))
             .filter(expenses::deleted_at.is_null())
             .first::<Expense>(get_db_conn(pool).deref_mut())
     }
@@ -143,8 +143,8 @@ impl ExpenseRepository {
         user_id: Uuid,
     ) -> QueryResult<Expense> {
         expenses::table
-            .filter(expenses::expense_id.eq(id.to_string()))
-            .filter(expenses::user_id.eq(user_id.to_string()))
+            .filter(expenses::expense_id.eq(id))
+            .filter(expenses::user_id.eq(user_id))
             .filter(expenses::deleted_at.is_null())
             .first::<Expense>(get_db_conn(pool).deref_mut())
     }

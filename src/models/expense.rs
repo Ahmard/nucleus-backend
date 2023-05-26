@@ -2,6 +2,7 @@
 
 use diesel::{Associations, Insertable, Queryable};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use super::super::schema::expenses;
 use crate::models::project::Project;
@@ -12,9 +13,9 @@ use crate::models::user::User;
 #[diesel(belongs_to(Project))]
 #[diesel(table_name = expenses)]
 pub struct Expense {
-    pub expense_id: String,
-    pub project_id: String,
-    pub user_id: String,
+    pub expense_id: Uuid,
+    pub project_id: Uuid,
+    pub user_id: Uuid,
     pub amount: i64,
     pub narration: String,
     pub spent_at: chrono::NaiveDateTime,

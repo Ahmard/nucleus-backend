@@ -2,14 +2,15 @@
 
 use diesel::{Insertable, Queryable};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use super::super::schema::projects;
 
 #[derive(Debug, Serialize, Deserialize, Insertable, Queryable, Clone)]
 #[diesel(table_name = projects)]
 pub struct Project {
-    pub project_id: String,
-    pub user_id: String,
+    pub project_id: Uuid,
+    pub user_id: Uuid,
     pub name: String,
     pub description: String,
     pub created_at: chrono::NaiveDateTime,

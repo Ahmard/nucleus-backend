@@ -2,13 +2,14 @@
 
 use diesel::{Insertable, Queryable};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use super::super::schema::labels;
 
 #[derive(Debug, Serialize, Deserialize, Insertable, Queryable, Clone)]
 #[diesel(table_name = labels)]
 pub struct Label {
-    pub label_id: String,
+    pub label_id: Uuid,
     pub name: String,
     pub module: String,
     pub created_at: chrono::NaiveDateTime,
