@@ -11,8 +11,6 @@ use crate::models::DBPool;
 use crate::schema::expenses;
 use crate::schema::projects;
 use diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl, sql_query, TextExpressionMethods};
-use diesel::sql_types::{Integer};
-use log::debug;
 use uuid::Uuid;
 use crate::helpers::db_pagination::Paginate;
 
@@ -35,7 +33,7 @@ impl ExpenseRepository {
         let search_format = format!("%{}%", query_params.get_search_query());
 
         builder
-            .filter(expenses::narration.like(search_format))
+            .filter(expenses::narration.like(search_format.clone()))
             .paginate(query_params.get_page())
             .per_page(query_params.get_per_page())
             .load_and_count_pages::<(Expense, Project)>(get_db_conn(pool).deref_mut())
@@ -155,10 +153,10 @@ impl ExpenseRepository {
     }
 
     pub fn fetch_aggregate_by_user_id(&mut self, pool: &DBPool, user_id: Uuid) -> QueryResult<Vec<ExpenseAggregate>> {
-        let mut sql = format!("SELECT (SELECT SUM(amount) FROM expenses WHERE EXTRACT(YEAR FROM expenses.spent_at) = {})::VARCHAR AS year_expenses", Utc::now().year());
-        sql += &*format!(", (SELECT SUM(amount) FROM expenses WHERE EXTRACT(MONTH FROM expenses.spent_at) = {})::VARCHAR AS month_expenses", Utc::now().month());
-        sql += &*format!(", (SELECT SUM(amount) FROM expenses WHERE EXTRACT(WEEK FROM expenses.spent_at) = EXTRACT(WEEK FROM NOW()))::VARCHAR AS week_expenses");
-        sql += &*format!(", (SELECT SUM(amount) FROM expenses WHERE EXTRACT(DAY FROM expenses.spent_at) = {})::VARCHAR AS today_expenses", Utc::now().day()+1);
+        let mut sql = format!("SELECT (SELECT SUM(amount) FROM expenses WHERE EXTRACT(YEAR FROM expenses.spent_at) = {} AND expenses.user_id = '{}')::VARCHAR AS year_expenses", Utc::now().year(), user_id.clone());
+        sql += &*format!(", (SELECT SUM(amount) FROM expenses WHERE EXTRACT(MONTH FROM expenses.spent_at) = {} AND expenses.user_id = '{}')::VARCHAR AS month_expenses", Utc::now().month(), user_id.clone());
+        sql += &*format!(", (SELECT SUM(amount) FROM expenses WHERE EXTRACT(WEEK FROM expenses.spent_at) = EXTRACT(WEEK FROM NOW()) AND expenses.user_id = '{}')::VARCHAR AS week_expenses", user_id.clone());
+        sql += &*format!(", (SELECT SUM(amount) FROM expenses WHERE EXTRACT(DAY FROM expenses.spent_at) = {} AND expenses.user_id = '{}')::VARCHAR AS today_expenses", Utc::now().day(), user_id.clone());
 
         sql_query(sql)
             // .bind::<Integer, _>(Utc::now().year())

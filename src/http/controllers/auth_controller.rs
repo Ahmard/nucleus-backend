@@ -2,7 +2,7 @@ use actix_web::http::StatusCode;
 use actix_web::web::{Data, Json, ServiceConfig};
 use actix_web::{get, post, HttpMessage, HttpRequest, HttpResponse};
 use diesel::result::DatabaseErrorInformation;
-use crate::helpers::auth::get_user_id;
+use crate::helpers::auth::get_uuid;
 
 use crate::helpers::responder::{
     json, json_error_message, json_success, json_success_message, json_unauthorized_message,
@@ -34,7 +34,7 @@ async fn login(pool: Data<DBPool>, data: Json<LoginForm>) -> HttpResponse {
 
 #[get("me")]
 async fn me(pool: Data<DBPool>, req: HttpRequest, _: AuthMiddleware) -> HttpResponse {
-    let user_lookup = UserRepository.find_by_id(pool.get_ref(), get_user_id(req.extensions()));
+    let user_lookup = UserRepository.find_by_id(pool.get_ref(), get_uuid(req.extensions()));
 
     if user_lookup.is_err() {
         return json_unauthorized_message("Invalid auth token");

@@ -1,4 +1,5 @@
 use std::ops::DerefMut;
+use chrono::{Datelike, Utc};
 use crate::helpers::db::current_timestamp;
 use crate::helpers::error_messages::db_failed_to_execute;
 use crate::helpers::{get_db_conn};
@@ -6,9 +7,10 @@ use crate::helpers::http::QueryParams;
 use crate::models::project::Project;
 use crate::models::DBPool;
 use crate::schema::projects;
-use diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl, TextExpressionMethods};
+use diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl, sql_query, TextExpressionMethods};
 use uuid::Uuid;
 use crate::helpers::db_pagination::Paginate;
+use crate::models::expense::ExpenseAggregate;
 
 pub struct ProjectRepository;
 
@@ -117,5 +119,18 @@ impl ProjectRepository {
             .filter(projects::user_id.eq(user_id))
             .filter(projects::deleted_at.is_null())
             .first::<Project>(get_db_conn(pool).deref_mut())
+    }
+
+    pub fn fetch_aggregate_by_project_id(&mut self, pool: &DBPool, project_id: Uuid) -> QueryResult<Vec<ExpenseAggregate>> {
+        let mut sql = format!("SELECT (SELECT SUM(amount) FROM expenses WHERE EXTRACT(YEAR FROM expenses.spent_at) = {} AND expenses.project_id = '{}')::VARCHAR AS year_expenses", Utc::now().year(), project_id.clone());
+        sql += &*format!(", (SELECT SUM(amount) FROM expenses WHERE EXTRACT(MONTH FROM expenses.spent_at) = {} AND expenses.project_id = '{}')::VARCHAR AS month_expenses", Utc::now().month(), project_id.clone());
+        sql += &*format!(", (SELECT SUM(amount) FROM expenses WHERE EXTRACT(WEEK FROM expenses.spent_at) = EXTRACT(WEEK FROM NOW()) AND expenses.project_id = '{}')::VARCHAR AS week_expenses", project_id.clone());
+        sql += &*format!(", (SELECT SUM(amount) FROM expenses WHERE EXTRACT(DAY FROM expenses.spent_at) = {} AND expenses.project_id = '{}')::VARCHAR AS today_expenses", Utc::now().day(), project_id.clone());
+
+        sql_query(sql)
+            // .bind::<Integer, _>(Utc::now().year())
+            // .bind::<Integer, _>(Utc::now().month() as i32)
+            // .bind::<Integer, _>(Utc::now().day() as i32)
+            .load::<ExpenseAggregate>(get_db_conn(pool).deref_mut())
     }
 }

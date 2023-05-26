@@ -1,4 +1,4 @@
-use crate::helpers::auth::get_user_id;
+use crate::helpers::auth::get_uuid;
 use crate::helpers::db::current_timestamp;
 use crate::helpers::http::{IdPathParam, QueryParams};
 use crate::helpers::responder::{json_entity_not_found_response, json_error_message, json_invalid_uuid_response, json_pagination, json_success, json_success_message};
@@ -11,7 +11,6 @@ use actix_web::web::{Data, Json, Path, Query, ServiceConfig};
 use actix_web::{delete, get, post, put, HttpMessage, HttpRequest, HttpResponse};
 use chrono::NaiveDateTime;
 use std::str::FromStr;
-use log::info;
 use uuid::Uuid;
 
 pub fn expense_controller(cfg: &mut ServiceConfig) {
@@ -30,19 +29,14 @@ async fn index(
     q: Query<QueryParams>,
     _: AuthMiddleware,
 ) -> HttpResponse {
-    let user_id = get_user_id(req.extensions());
+    let user_id = get_uuid(req.extensions());
     let expenses = ExpenseRepository.list_by_user_id(pool.get_ref(), user_id, q.into_inner());
     json_pagination(expenses.unwrap())
 }
 
 #[get("aggregates")]
-async fn aggregate(
-    pool: Data<DBPool>,
-    req: HttpRequest,
-    q: Query<QueryParams>,
-    _: AuthMiddleware,
-) -> HttpResponse {
-    let user_id = get_user_id(req.extensions());
+async fn aggregate(pool: Data<DBPool>, req: HttpRequest, _: AuthMiddleware) -> HttpResponse {
+    let user_id = get_uuid(req.extensions());
     let result = ExpenseRepository.fetch_aggregate_by_user_id(pool.get_ref(), user_id);
 
     if result.is_err() {
@@ -61,7 +55,7 @@ async fn create(
 ) -> HttpResponse {
     let expense = ExpenseService.create(
         pool.get_ref(),
-        get_user_id(req.extensions()),
+        get_uuid(req.extensions()),
         Uuid::from_str(form.project_id.as_str()).unwrap(),
         form.amount.clone(),
         form.narration.clone(),
@@ -86,7 +80,7 @@ async fn show(
     let result = ExpenseRepository.find_owned_by_id(
         pool.get_ref(),
         id.unwrap(),
-        get_user_id(req.extensions()),
+        get_uuid(req.extensions()),
     );
 
     if result.is_err() {
@@ -112,7 +106,7 @@ async fn update(
     let result = ExpenseService.update(
         pool.get_ref(),
         id.unwrap(),
-        get_user_id(req.extensions()),
+        get_uuid(req.extensions()),
         Uuid::from_str(form.project_id.as_str()).unwrap(),
         form.amount.clone(),
         form.narration.clone(),
@@ -139,7 +133,7 @@ async fn delete(
     }
 
     ExpenseService
-        .delete(pool.get_ref(), id.unwrap(), get_user_id(req.extensions()))
+        .delete(pool.get_ref(), id.unwrap(), get_uuid(req.extensions()))
         .expect("Failed to delete expense");
 
     json_success_message("expense deleted")
