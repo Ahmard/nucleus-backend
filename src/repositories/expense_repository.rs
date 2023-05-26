@@ -11,6 +11,7 @@ use crate::schema::projects;
 use diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl, TextExpressionMethods};
 use std::ops::DerefMut;
 use uuid::Uuid;
+use crate::helpers::db_pagination::Paginate;
 
 pub struct ExpenseRepository;
 
@@ -20,7 +21,7 @@ impl ExpenseRepository {
         pool: &DBPool,
         id: Uuid,
         mut query_params: QueryParams,
-    ) -> QueryResult<Vec<(Expense, Project)>> {
+    ) -> QueryResult<(Vec<(Expense, Project)>, i64)> {
         let builder = expenses::table
             .inner_join(projects::table)
             .filter(expenses::user_id.eq(id))
@@ -32,7 +33,9 @@ impl ExpenseRepository {
 
         builder
             .filter(expenses::narration.like(search_format))
-            .get_results::<(Expense, Project)>(get_db_conn(pool).deref_mut())
+            .paginate(query_params.get_page())
+            .per_page(query_params.get_per_page())
+            .load_and_count_pages::<(Expense, Project)>(get_db_conn(pool).deref_mut())
     }
 
     pub fn list_by_project_id(

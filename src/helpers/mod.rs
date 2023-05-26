@@ -12,6 +12,7 @@ pub mod http;
 pub mod number;
 pub mod responder;
 pub mod string;
+pub mod db_pagination;
 
 pub fn get_db_conn(pool: &DBPool) -> PooledConnection<ConnectionManager<PgConnection>> {
     let conn = pool.get().expect(db_failed_to_acquire_conn());
