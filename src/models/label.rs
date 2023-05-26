@@ -10,6 +10,7 @@ use super::super::schema::labels;
 #[diesel(table_name = labels)]
 pub struct Label {
     pub label_id: Uuid,
+    pub user_id: Uuid,
     pub name: String,
     pub module: String,
     pub created_at: chrono::NaiveDateTime,
