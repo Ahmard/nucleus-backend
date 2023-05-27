@@ -1,22 +1,17 @@
 use crate::helpers::auth::get_uuid;
-use crate::helpers::db::current_timestamp;
 use crate::helpers::http::{IdPathParam, QueryParams};
 use crate::helpers::responder::{json_entity_not_found_response, json_error_message, json_invalid_uuid_response, json_pagination, json_success, json_success_message};
 use crate::http::middlewares::auth_middleware::AuthMiddleware;
-use crate::models::expense::ExpenseForm;
+use crate::models::budget::BudgetForm;
 use crate::models::DBPool;
-use crate::repositories::expense_repository::ExpenseRepository;
-use crate::services::expense_service::ExpenseService;
+use crate::repositories::budget_repository::BudgetRepository;
+use crate::services::budget_service::BudgetService;
 use actix_web::web::{Data, Json, Path, Query, ServiceConfig};
 use actix_web::{delete, get, post, put, HttpMessage, HttpRequest, HttpResponse};
-use chrono::NaiveDateTime;
-use std::str::FromStr;
-use uuid::Uuid;
 
-pub fn expense_controller(cfg: &mut ServiceConfig) {
+pub fn budget_controller(cfg: &mut ServiceConfig) {
     cfg.service(index);
     cfg.service(create);
-    cfg.service(aggregate);
     cfg.service(show);
     cfg.service(update);
     cfg.service(delete);
@@ -30,40 +25,27 @@ async fn index(
     _: AuthMiddleware,
 ) -> HttpResponse {
     let user_id = get_uuid(req.extensions());
-    let expenses = ExpenseRepository.list_by_user_id(pool.get_ref(), user_id, q.into_inner());
-    json_pagination(expenses.unwrap())
-}
-
-#[get("aggregates")]
-async fn aggregate(pool: Data<DBPool>, req: HttpRequest, _: AuthMiddleware) -> HttpResponse {
-    let user_id = get_uuid(req.extensions());
-    let result = ExpenseRepository.fetch_aggregate_by_user_id(pool.get_ref(), user_id);
-
-    if result.is_err() {
-        return json_error_message(result.err().unwrap().to_string().as_str());
-    }
-
-    json_success(result.unwrap().first().unwrap())
+    let budgets = BudgetRepository.list_by_user_id(pool.get_ref(), user_id, q.into_inner());
+    json_pagination(budgets.unwrap())
 }
 
 #[post("")]
 async fn create(
     pool: Data<DBPool>,
-    form: Json<ExpenseForm>,
+    form: Json<BudgetForm>,
     req: HttpRequest,
     _: AuthMiddleware,
 ) -> HttpResponse {
-    let expense = ExpenseService.create(
+    let budget = BudgetService.create(
         pool.get_ref(),
         get_uuid(req.extensions()),
-        Uuid::from_str(form.project_id.as_str()).unwrap(),
-        Uuid::from_str(form.budget_id.as_str()).unwrap(),
-        form.amount.clone(),
-        form.narration.clone(),
-        get_spending_time(form.spent_at.clone()),
+        form.amount,
+        form.month,
+        form.year,
+        form.comment.clone(),
     );
 
-    json_success(expense)
+    json_success(budget)
 }
 
 #[get("{id}")]
@@ -78,14 +60,14 @@ async fn show(
         return json_invalid_uuid_response();
     }
 
-    let result = ExpenseRepository.find_owned_by_id(
+    let result = BudgetRepository.find_owned_by_id(
         pool.get_ref(),
         id.unwrap(),
         get_uuid(req.extensions()),
     );
 
     if result.is_err() {
-        return json_entity_not_found_response("expense");
+        return json_entity_not_found_response("budget");
     }
 
     json_success(result.unwrap())
@@ -94,7 +76,7 @@ async fn show(
 #[put("{id}")]
 async fn update(
     pool: Data<DBPool>,
-    form: Json<ExpenseForm>,
+    form: Json<BudgetForm>,
     mut param: Path<IdPathParam>,
     req: HttpRequest,
     _: AuthMiddleware,
@@ -104,15 +86,14 @@ async fn update(
         return json_invalid_uuid_response();
     }
 
-    let result = ExpenseService.update(
+    let result = BudgetService.update(
         pool.get_ref(),
         id.unwrap(),
         get_uuid(req.extensions()),
-        Uuid::from_str(form.project_id.as_str()).unwrap(),
-        Uuid::from_str(form.budget_id.as_str()).unwrap(),
-        form.amount.clone(),
-        form.narration.clone(),
-        get_spending_time(form.spent_at.clone()),
+        form.amount,
+        form.month,
+        form.year,
+        form.comment.clone(),
     );
 
     if result.is_err() {
@@ -134,17 +115,9 @@ async fn delete(
         return json_invalid_uuid_response();
     }
 
-    ExpenseService
+    BudgetService
         .delete(pool.get_ref(), id.unwrap(), get_uuid(req.extensions()))
-        .expect("Failed to delete expense");
+        .expect("Failed to delete budget");
 
-    json_success_message("expense deleted")
-}
-
-fn get_spending_time(spent_at: Option<String>) -> NaiveDateTime {
-    let spending_time = spent_at.clone();
-    match spending_time {
-        None => current_timestamp(),
-        Some(val) => NaiveDateTime::parse_from_str(val.as_str(), "%Y-%m-%d %H:%M:%S").unwrap(),
-    }
+    json_success_message("budget deleted")
 }

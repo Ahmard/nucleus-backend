@@ -4,6 +4,7 @@ pub mod expense;
 pub mod label;
 pub mod project;
 pub mod user;
+pub mod budget;
 
 use diesel::{r2d2::ConnectionManager, PgConnection};
 
