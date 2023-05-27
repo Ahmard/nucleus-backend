@@ -4,7 +4,6 @@ use crate::helpers::db::current_timestamp;
 use crate::helpers::error_messages::db_failed_to_execute;
 use crate::helpers::{get_db_conn};
 use crate::helpers::http::QueryParams;
-use crate::helpers::number::to_cent;
 use crate::models::expense::{Expense, ExpenseAggregate};
 use crate::models::project::Project;
 use crate::models::DBPool;
@@ -63,6 +62,7 @@ impl ExpenseRepository {
         pool: &DBPool,
         user_id: Uuid,
         project_id: Uuid,
+        budget_id: Uuid,
         amount: i64,
         narration: String,
         spent_at: chrono::NaiveDateTime,
@@ -71,7 +71,8 @@ impl ExpenseRepository {
             expense_id: Uuid::new_v4(),
             user_id,
             project_id,
-            amount: to_cent(amount),
+            budget_id,
+            amount,
             narration,
             spent_at,
             created_at: current_timestamp(),
@@ -93,6 +94,7 @@ impl ExpenseRepository {
         id: Uuid,
         user_id: Uuid,
         project_id: Uuid,
+        budget_id: Uuid,
         amount: i64,
         narration: String,
         spent_at: chrono::NaiveDateTime,
@@ -105,9 +107,10 @@ impl ExpenseRepository {
 
         diesel::update(expenses::dsl::expenses.filter(expenses::expense_id.eq(id)))
             .set((
-                expenses::dsl::amount.eq(to_cent(amount)),
+                expenses::dsl::amount.eq(amount),
                 expenses::dsl::narration.eq(narration),
                 expenses::dsl::project_id.eq(project_id),
+                expenses::dsl::budget_id.eq(budget_id),
                 expenses::dsl::spent_at.eq(spent_at),
             ))
             .execute(get_db_conn(pool).deref_mut())
