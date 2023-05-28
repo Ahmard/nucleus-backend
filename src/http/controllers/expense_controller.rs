@@ -53,17 +53,21 @@ async fn create(
     req: HttpRequest,
     _: AuthMiddleware,
 ) -> HttpResponse {
-    let expense = ExpenseService.create(
+    let user_id = get_uuid(req.extensions());
+    let result = ExpenseService.create(
         pool.get_ref(),
-        get_uuid(req.extensions()),
+        user_id,
         Uuid::from_str(form.project_id.as_str()).unwrap(),
-        Uuid::from_str(form.budget_id.as_str()).unwrap(),
         form.amount.clone(),
         form.narration.clone(),
         get_spending_time(form.spent_at.clone()),
     );
 
-    json_success(expense)
+    if result.is_err() {
+        return json_error_message(result.err().unwrap());
+    }
+
+    json_success(result.unwrap())
 }
 
 #[get("{id}")]
@@ -109,7 +113,6 @@ async fn update(
         id.unwrap(),
         get_uuid(req.extensions()),
         Uuid::from_str(form.project_id.as_str()).unwrap(),
-        Uuid::from_str(form.budget_id.as_str()).unwrap(),
         form.amount.clone(),
         form.narration.clone(),
         get_spending_time(form.spent_at.clone()),

@@ -151,5 +151,5 @@ async fn expenses(
 
     let projects =
         ExpenseRepository.list_by_project_id(pool.get_ref(), id.unwrap(), q.into_inner());
-    json_success(projects.unwrap())
+    json_pagination(projects.unwrap())
 }

@@ -8,11 +8,13 @@ use crate::repositories::budget_repository::BudgetRepository;
 use crate::services::budget_service::BudgetService;
 use actix_web::web::{Data, Json, Path, Query, ServiceConfig};
 use actix_web::{delete, get, post, put, HttpMessage, HttpRequest, HttpResponse};
+use crate::repositories::expense_repository::ExpenseRepository;
 
 pub fn budget_controller(cfg: &mut ServiceConfig) {
     cfg.service(index);
     cfg.service(create);
     cfg.service(show);
+    cfg.service(expenses);
     cfg.service(update);
     cfg.service(delete);
 }
@@ -46,6 +48,18 @@ async fn create(
     );
 
     json_success(budget)
+}
+
+#[get("current-budget")]
+async fn current_budget(pool: Data<DBPool>, req: HttpRequest, _: AuthMiddleware) -> HttpResponse {
+    let user_id = get_uuid(req.extensions());
+    let budget = BudgetRepository.find_owned_current_month_budget(pool.get_ref(), user_id).unwrap();
+
+    if budget.is_none() {
+        return json_entity_not_found_response("expense");
+    }
+
+    json_success(budget.unwrap())
 }
 
 #[get("{id}")]
@@ -120,4 +134,21 @@ async fn delete(
         .expect("Failed to delete budget");
 
     json_success_message("budget deleted")
+}
+
+#[get("{id}/expenses")]
+async fn expenses(
+    pool: Data<DBPool>,
+    mut param: Path<IdPathParam>,
+    q: Query<QueryParams>,
+    _: AuthMiddleware,
+) -> HttpResponse {
+    let id = param.get_uuid();
+    if id.is_err() {
+        return json_invalid_uuid_response();
+    }
+
+    let projects =
+        ExpenseRepository.list_by_budget_id(pool.get_ref(), id.unwrap(), q.into_inner());
+    json_pagination(projects.unwrap())
 }

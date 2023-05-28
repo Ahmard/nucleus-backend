@@ -9,7 +9,7 @@ use crate::models::project::Project;
 use crate::models::DBPool;
 use crate::schema::expenses;
 use crate::schema::projects;
-use diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl, sql_query, TextExpressionMethods};
+use diesel::{ExpressionMethods, PgTextExpressionMethods, QueryDsl, QueryResult, RunQueryDsl, sql_query};
 use uuid::Uuid;
 use crate::helpers::db_pagination::Paginate;
 
@@ -32,7 +32,7 @@ impl ExpenseRepository {
         let search_format = format!("%{}%", query_params.get_search_query());
 
         builder
-            .filter(expenses::narration.like(search_format.clone()))
+            .filter(expenses::narration.ilike(search_format.clone()))
             .paginate(query_params.get_page())
             .per_page(query_params.get_per_page())
             .load_and_count_pages::<(Expense, Project)>(get_db_conn(pool).deref_mut())
@@ -43,7 +43,7 @@ impl ExpenseRepository {
         pool: &DBPool,
         id: Uuid,
         mut query_params: QueryParams,
-    ) -> QueryResult<Vec<(Expense, Project)>> {
+    ) -> QueryResult<(Vec<(Expense, Project)>, i64)> {
         let builder = expenses::table
             .inner_join(projects::table)
             .filter(expenses::project_id.eq(id))
@@ -53,8 +53,31 @@ impl ExpenseRepository {
 
         let search_format = format!("%{}%", query_params.get_search_query());
         builder
-            .filter(expenses::narration.like(search_format))
-            .get_results::<(Expense, Project)>(get_db_conn(pool).deref_mut())
+            .filter(expenses::narration.ilike(search_format))
+            .paginate(query_params.get_page())
+            .per_page(query_params.get_per_page())
+            .load_and_count_pages::<(Expense, Project)>(get_db_conn(pool).deref_mut())
+    }
+
+    pub fn list_by_budget_id(
+        &mut self,
+        pool: &DBPool,
+        id: Uuid,
+        mut query_params: QueryParams,
+    ) -> QueryResult<(Vec<(Expense, Project)>, i64)> {
+        let builder = expenses::table
+            .inner_join(projects::table)
+            .filter(expenses::budget_id.eq(id))
+            .filter(expenses::deleted_at.is_null())
+            .order_by(expenses::created_at.desc())
+            .limit(query_params.get_limit());
+
+        let search_format = format!("%{}%", query_params.get_search_query());
+        builder
+            .filter(expenses::narration.ilike(search_format))
+            .paginate(query_params.get_page())
+            .per_page(query_params.get_per_page())
+            .load_and_count_pages::<(Expense, Project)>(get_db_conn(pool).deref_mut())
     }
 
     pub fn create(
@@ -94,7 +117,6 @@ impl ExpenseRepository {
         id: Uuid,
         user_id: Uuid,
         project_id: Uuid,
-        budget_id: Uuid,
         amount: i64,
         narration: String,
         spent_at: chrono::NaiveDateTime,
@@ -110,7 +132,6 @@ impl ExpenseRepository {
                 expenses::dsl::amount.eq(amount),
                 expenses::dsl::narration.eq(narration),
                 expenses::dsl::project_id.eq(project_id),
-                expenses::dsl::budget_id.eq(budget_id),
                 expenses::dsl::spent_at.eq(spent_at),
             ))
             .execute(get_db_conn(pool).deref_mut())

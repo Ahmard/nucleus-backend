@@ -29,7 +29,6 @@ pub struct Expense {
 #[derive(Serialize, Deserialize)]
 pub struct ExpenseForm {
     pub project_id: String,
-    pub budget_id: String,
     pub amount: i64,
     pub narration: String,
     pub spent_at: Option<String>,

@@ -1,11 +1,13 @@
 use std::ops::DerefMut;
+use chrono::{Datelike, Utc};
 use crate::helpers::db::current_timestamp;
 use crate::helpers::error_messages::db_failed_to_execute;
 use crate::helpers::{get_db_conn};
 use crate::helpers::http::QueryParams;
 use crate::models::DBPool;
 use crate::schema::{budgets};
-use diesel::{ExpressionMethods, PgTextExpressionMethods, QueryDsl, QueryResult, RunQueryDsl};
+use diesel::{ExpressionMethods, OptionalExtension, PgTextExpressionMethods, QueryDsl, QueryResult, RunQueryDsl};
+use diesel::result::Error;
 use uuid::Uuid;
 use crate::helpers::date_time::Month;
 use crate::helpers::db_pagination::Paginate;
@@ -131,6 +133,16 @@ impl BudgetRepository {
             .filter(budgets::user_id.eq(user_id))
             .filter(budgets::deleted_at.is_null())
             .first::<Budget>(get_db_conn(pool).deref_mut())
+    }
+
+    pub fn find_owned_current_month_budget(&mut self, pool: &DBPool, user_id: Uuid) -> Result<Option<Budget>, Error> {
+        let budget = budgets::table
+            .filter(budgets::month.eq(Utc::now().month() as i16))
+            .filter(budgets::user_id.eq(user_id))
+            .filter(budgets::deleted_at.is_null())
+            .first::<Budget>(get_db_conn(pool).deref_mut());
+
+        return budget.optional();
     }
 }
 

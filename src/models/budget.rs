@@ -22,6 +22,12 @@ pub struct Budget {
     pub deleted_at: Option<chrono::NaiveDateTime>,
 }
 
+impl Budget {
+    pub fn available_amount(&mut self) -> i64 {
+        self.amount - self.amount_used
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct BudgetForm {
     pub amount: i64,
