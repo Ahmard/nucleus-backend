@@ -1,0 +1,29 @@
+version: '3'
+
+services:
+  nucleus-backend-api:
+    container_name: nucleus-backend-api
+    restart: always
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "9955:8080"
+    depends_on:
+      - nucleus-backend-db
+
+  nucleus-backend-db:
+    container_name: nucleus-backend-db
+    restart: always
+    image: postgres:15.3-alpine3.18
+    environment:
+      POSTGRES_DB: nucleus-backend
+      POSTGRES_USER: oxygen
+      POSTGRES_PASSWORD: "Hydro.gen@1234"
+    volumes:
+      - nucleus-backend-db-data:/var/lib/postgresql/data
+    ports:
+      - "9000:5432"
+
+volumes:
+  nucleus-backend-db-data:
