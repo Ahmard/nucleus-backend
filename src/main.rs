@@ -32,7 +32,16 @@ async fn main() -> std::io::Result<()> {
 
     let host: String = env::var("HOST").unwrap();
     let port: u16 = env::var("PORT").unwrap().parse().unwrap();
-    let db_url: String = env::var("DATABASE_URL").unwrap();
+
+    let db_url: String = format!(
+        "{}://{}:{}@{}:{}/{}",
+        env::var("DB_DRIVER").unwrap(),
+        env::var("DB_USERNAME").unwrap(),
+        env::var("DB_PASSWORD").unwrap(),
+        env::var("DB_HOST").unwrap(),
+        env::var("DB_PORT").unwrap(),
+        env::var("DB_DATABASE").unwrap(),
+    );
 
     // create db connection pool
     let manager = ConnectionManager::<PgConnection>::new(db_url);
@@ -65,8 +74,8 @@ async fn main() -> std::io::Result<()> {
                     .body("Page Not Found")
             }))
     })
-    .shutdown_timeout(1)
-    .bind((host, port))?
-    .run()
-    .await
+        .shutdown_timeout(1)
+        .bind((host, port))?
+        .run()
+        .await
 }
