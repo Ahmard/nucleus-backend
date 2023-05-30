@@ -21,4 +21,3 @@ uuid = { version = "1", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 diesel = { version = "2", features = ["postgres", "r2d2", "uuid", "chrono"] }
 jsonwebtoken = "8.3.0"
-actix-web-httpauth = "0.8.0"
