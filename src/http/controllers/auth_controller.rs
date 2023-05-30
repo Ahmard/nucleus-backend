@@ -2,13 +2,13 @@ use actix_web::http::StatusCode;
 use actix_web::web::{Data, Json, ServiceConfig};
 use actix_web::{get, post, HttpMessage, HttpRequest, HttpResponse};
 use diesel::result::DatabaseErrorInformation;
-use crate::helpers::auth::get_auth_id;
+use crate::helpers::auth::{get_auth_user};
 
-use crate::helpers::responder::{json, json_error_message, json_error_message_status, json_success, json_success_message, json_unauthorized_message};
+use crate::helpers::responder::{json, json_error_message, json_success, json_success_message, json_unauthorized_message};
 use crate::http::middlewares::auth_middleware::AuthMiddleware;
 use crate::models::DBPool;
 
-use crate::models::user::{LoginForm, RegisterForm, User};
+use crate::models::user::{LoginForm, RegisterForm};
 use crate::repositories::user_repository::UserRepository;
 use crate::services::auth_service::AuthService;
 
@@ -31,20 +31,9 @@ async fn login(pool: Data<DBPool>, data: Json<LoginForm>) -> HttpResponse {
 }
 
 #[get("me")]
-async fn me(pool: Data<DBPool>, req: HttpRequest, _: AuthMiddleware) -> HttpResponse {
-    let user = req.extensions().get::<User>();
-    let user_lookup = UserRepository.find_by_id(pool.get_ref(), get_auth_id(req.extensions()));
-
-    if user_lookup.is_err() {
-        return json_unauthorized_message("Invalid auth token");
-    }
-
-    let result = user_lookup.unwrap();
-    if result.is_none() {
-        return json_error_message_status("Invalid auth token, user not found", StatusCode::NOT_FOUND);
-    }
-
-    json(result.unwrap(), StatusCode::OK)
+async fn me(req: HttpRequest, _: AuthMiddleware) -> HttpResponse {
+    let user = get_auth_user(req.extensions());
+    json(user, StatusCode::OK)
 }
 
 #[post("logout")]
