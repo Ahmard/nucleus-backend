@@ -1,4 +1,3 @@
-use std::borrow::Cow;
 use actix_web::dev::Extensions;
 use std::cell::Ref;
 use uuid::Uuid;
