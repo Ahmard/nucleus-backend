@@ -5,18 +5,23 @@ use std::future::{ready, Ready};
 use actix_web::error::ErrorUnauthorized;
 use actix_web::{dev::Payload, Error as ActixWebError};
 use actix_web::{http, FromRequest, HttpMessage, HttpRequest};
+use actix_web::web::Data;
 use jsonwebtoken::{decode, DecodingKey, Validation};
 use serde::Serialize;
+use crate::models::DBPool;
+use crate::models::user::User;
+use crate::repositories::user_repository::UserRepository;
 
 use crate::services::auth_service::TokenClaims;
 
 #[derive(Debug, Serialize)]
-struct ErrorResponse {
-    status: String,
-    message: String,
+struct ErrorResponse<'a> {
+    success: bool,
+    status: i32,
+    message: &'a str,
 }
 
-impl fmt::Display for ErrorResponse {
+impl<'a> fmt::Display for ErrorResponse<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", serde_json::to_string(&self).unwrap())
     }
@@ -40,11 +45,9 @@ impl FromRequest for AuthMiddleware {
             });
 
         if token.is_none() {
-            let json_error = ErrorResponse {
-                status: "fail".to_string(),
-                message: "You are not logged in, please provide token".to_string(),
-            };
-            return ready(Err(ErrorUnauthorized(json_error)));
+            return ready(Err(ErrorUnauthorized(
+                make_unauthorized_response("You are not logged in, please provide token")
+            )));
         }
 
         let claims = match decode::<TokenClaims>(
@@ -54,18 +57,36 @@ impl FromRequest for AuthMiddleware {
         ) {
             Ok(c) => c.claims,
             Err(_) => {
-                let json_error = ErrorResponse {
-                    status: "fail".to_string(),
-                    message: "Invalid token".to_string(),
-                };
-                return ready(Err(ErrorUnauthorized(json_error)));
+                return ready(Err(ErrorUnauthorized(
+                    make_unauthorized_response("Invalid auth token")
+                )));
             }
         };
 
         let user_id = uuid::Uuid::parse_str(claims.sub.as_str()).unwrap();
+        let pool = req.app_data::<Data<DBPool>>().unwrap();
+        let user_lookup = UserRepository.find_by_id(pool, user_id.clone()).unwrap();
+
+        if user_lookup.is_none() {
+            return ready(Err(ErrorUnauthorized(
+                make_unauthorized_response("Invalid auth token, user not found")
+            )));
+        }
+
         req.extensions_mut()
             .insert::<uuid::Uuid>(user_id.to_owned());
 
+        req.extensions_mut()
+            .insert::<User>(user_lookup.unwrap());
+
         ready(Ok(AuthMiddleware { user_id }))
+    }
+}
+
+fn make_unauthorized_response<'a>(message: &str) -> ErrorResponse {
+    ErrorResponse {
+        success: false,
+        status: 401,
+        message,
     }
 }

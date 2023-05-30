@@ -7,7 +7,8 @@ use crate::models::user::{RegisterForm, User, UserStatus};
 use crate::models::DBPool;
 use crate::schema::users;
 use crate::schema::users::{email, user_id};
-use diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl};
+use diesel::{ExpressionMethods, OptionalExtension, QueryDsl, QueryResult, RunQueryDsl};
+use diesel::result::Error;
 use uuid::Uuid;
 
 pub struct UserRepository;
@@ -39,10 +40,11 @@ impl UserRepository {
         Ok(user)
     }
 
-    pub fn find_by_id(&mut self, pool: &DBPool, id: Uuid) -> QueryResult<User> {
+    pub fn find_by_id(&mut self, pool: &DBPool, id: Uuid) -> Result<Option<User>, Error> {
         users::table
             .filter(user_id.eq(id))
             .first::<User>(get_db_conn(pool).deref_mut())
+            .optional()
     }
 
     pub fn find_by_email(&mut self, pool: &DBPool, email_addr: String) -> QueryResult<User> {
