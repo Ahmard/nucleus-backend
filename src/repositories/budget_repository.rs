@@ -10,7 +10,7 @@ use diesel::{ExpressionMethods, OptionalExtension, PgTextExpressionMethods, Quer
 use diesel::result::Error;
 use uuid::Uuid;
 use crate::helpers::date_time::Month;
-use crate::helpers::db_pagination::Paginate;
+use crate::helpers::db_pagination::{Paginate, PaginationResult};
 use crate::models::budget::Budget;
 
 pub struct BudgetRepository;
@@ -21,7 +21,7 @@ impl BudgetRepository {
         pool: &DBPool,
         id: Uuid,
         mut query_params: QueryParams,
-    ) -> QueryResult<(Vec<Budget>, i64)> {
+    ) -> QueryResult<PaginationResult<Budget>> {
         let builder = budgets::table
             .filter(budgets::user_id.eq(id))
             .filter(budgets::deleted_at.is_null())

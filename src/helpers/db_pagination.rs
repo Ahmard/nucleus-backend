@@ -8,6 +8,12 @@ pub trait Paginate: Sized {
     fn paginate(self, page: i64) -> Paginated<Self>;
 }
 
+pub struct PaginationResult<U> {
+    pub records: Vec<U>,
+    pub total_pages: i64,
+    pub total_records: i64,
+}
+
 impl<T> Paginate for T {
     fn paginate(self, page: i64) -> Paginated<Self> {
         Paginated {
@@ -38,7 +44,7 @@ impl<T> Paginated<T> {
         }
     }
 
-    pub fn load_and_count_pages<'a, U>(self, conn: &mut PgConnection) -> QueryResult<(Vec<U>, i64)>
+    pub fn load_and_count_pages<'a, U>(self, conn: &mut PgConnection) -> QueryResult<PaginationResult<U>>
         where
             Self: LoadQuery<'a, PgConnection, (U, i64)>,
     {
@@ -47,7 +53,12 @@ impl<T> Paginated<T> {
         let total = results.get(0).map(|x| x.1).unwrap_or(0);
         let records = results.into_iter().map(|x| x.0).collect();
         let total_pages = (total as f64 / per_page as f64).ceil() as i64;
-        Ok((records, total_pages))
+
+        Ok(PaginationResult {
+            records,
+            total_pages,
+            total_records: total,
+        })
     }
 }
 

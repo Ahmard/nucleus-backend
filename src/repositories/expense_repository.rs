@@ -11,7 +11,7 @@ use crate::schema::expenses;
 use crate::schema::projects;
 use diesel::{ExpressionMethods, PgTextExpressionMethods, QueryDsl, QueryResult, RunQueryDsl, sql_query};
 use uuid::Uuid;
-use crate::helpers::db_pagination::Paginate;
+use crate::helpers::db_pagination::{Paginate, PaginationResult};
 
 pub struct ExpenseRepository;
 
@@ -21,7 +21,7 @@ impl ExpenseRepository {
         pool: &DBPool,
         id: Uuid,
         mut query_params: QueryParams,
-    ) -> QueryResult<(Vec<(Expense, Project)>, i64)> {
+    ) -> QueryResult<PaginationResult<(Expense, Project)>> {
         let builder = expenses::table
             .inner_join(projects::table)
             .filter(expenses::user_id.eq(id))
@@ -43,7 +43,7 @@ impl ExpenseRepository {
         pool: &DBPool,
         id: Uuid,
         mut query_params: QueryParams,
-    ) -> QueryResult<(Vec<(Expense, Project)>, i64)> {
+    ) -> QueryResult<PaginationResult<(Expense, Project)>> {
         let builder = expenses::table
             .inner_join(projects::table)
             .filter(expenses::project_id.eq(id))
@@ -64,7 +64,7 @@ impl ExpenseRepository {
         pool: &DBPool,
         id: Uuid,
         mut query_params: QueryParams,
-    ) -> QueryResult<(Vec<(Expense, Project)>, i64)> {
+    ) -> QueryResult<PaginationResult<(Expense, Project)>> {
         let builder = expenses::table
             .inner_join(projects::table)
             .filter(expenses::budget_id.eq(id))

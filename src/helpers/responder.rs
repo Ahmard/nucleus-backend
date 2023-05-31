@@ -6,6 +6,7 @@ use actix_web::web::Data;
 use actix_web::{HttpRequest, HttpResponse, Responder as ActixResponder};
 use serde::{Deserialize, Serialize};
 use tera::Context;
+use crate::helpers::db_pagination::PaginationResult;
 
 #[derive(Serialize, Deserialize)]
 pub struct JsonResponse<T: Serialize> {
@@ -18,7 +19,8 @@ pub struct JsonResponse<T: Serialize> {
 pub struct JsonPaginationResponse<T: Serialize> {
     success: bool,
     data: T,
-    pages: i64,
+    total_pages: i64,
+    total_records: i64,
     status: u16,
 }
 
@@ -42,14 +44,15 @@ pub fn json_success<T: Serialize>(data: T) -> HttpResponse {
     )
 }
 
-pub fn json_pagination<T: Serialize>(data: (T, i64)) -> HttpResponse {
+pub fn json_pagination<T: Serialize>(data: PaginationResult<T>) -> HttpResponse {
 
     json(
         JsonPaginationResponse {
             success: true,
             status: 200,
-            data: data.0,
-            pages: data.1,
+            data: data.records,
+            total_pages: data.total_pages,
+            total_records: data.total_records,
         },
         StatusCode::OK,
     )

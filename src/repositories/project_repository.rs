@@ -9,7 +9,7 @@ use crate::models::DBPool;
 use crate::schema::projects;
 use diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl, sql_query, TextExpressionMethods};
 use uuid::Uuid;
-use crate::helpers::db_pagination::Paginate;
+use crate::helpers::db_pagination::{Paginate, PaginationResult};
 use crate::models::expense::ExpenseAggregate;
 
 pub struct ProjectRepository;
@@ -20,7 +20,7 @@ impl ProjectRepository {
         pool: &DBPool,
         id: Uuid,
         mut query_params: QueryParams,
-    ) -> QueryResult<(Vec<Project>, i64)> {
+    ) -> QueryResult<PaginationResult<Project>> {
         let builder = projects::table
             .filter(projects::user_id.eq(id))
             .filter(projects::deleted_at.is_null())
