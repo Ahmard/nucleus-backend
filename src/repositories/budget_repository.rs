@@ -25,8 +25,7 @@ impl BudgetRepository {
         let builder = budgets::table
             .filter(budgets::user_id.eq(id))
             .filter(budgets::deleted_at.is_null())
-            .order_by(budgets::created_at.desc())
-            .limit(query_params.get_limit());
+            .order_by(budgets::created_at.desc());
 
         let search_format = format!("%{}%", query_params.get_search_query());
 

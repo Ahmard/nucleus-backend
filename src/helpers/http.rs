@@ -29,6 +29,7 @@ impl QueryParams {
         }
     }
 
+    #[allow(dead_code)]
     pub fn get_limit(&mut self) -> i64 {
         match self.limit.clone() {
             None => 10,

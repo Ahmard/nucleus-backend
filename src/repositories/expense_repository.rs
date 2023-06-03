@@ -26,8 +26,7 @@ impl ExpenseRepository {
             .inner_join(projects::table)
             .filter(expenses::user_id.eq(id))
             .filter(expenses::deleted_at.is_null())
-            .order_by(expenses::created_at.desc())
-            .limit(query_params.get_limit());
+            .order_by(expenses::created_at.desc());
 
         let search_format = format!("%{}%", query_params.get_search_query());
 
@@ -48,8 +47,7 @@ impl ExpenseRepository {
             .inner_join(projects::table)
             .filter(expenses::project_id.eq(id))
             .filter(expenses::deleted_at.is_null())
-            .order_by(expenses::created_at.desc())
-            .limit(query_params.get_limit());
+            .order_by(expenses::created_at.desc());
 
         let search_format = format!("%{}%", query_params.get_search_query());
         builder
@@ -69,8 +67,7 @@ impl ExpenseRepository {
             .inner_join(projects::table)
             .filter(expenses::budget_id.eq(id))
             .filter(expenses::deleted_at.is_null())
-            .order_by(expenses::created_at.desc())
-            .limit(query_params.get_limit());
+            .order_by(expenses::created_at.desc());
 
         let search_format = format!("%{}%", query_params.get_search_query());
         builder

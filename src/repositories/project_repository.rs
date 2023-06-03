@@ -24,8 +24,7 @@ impl ProjectRepository {
         let builder = projects::table
             .filter(projects::user_id.eq(id))
             .filter(projects::deleted_at.is_null())
-            .order_by(projects::created_at.desc())
-            .limit(query_params.get_limit());
+            .order_by(projects::created_at.desc());
 
         let search_format = format!("%{}%", query_params.get_search_query());
         builder
