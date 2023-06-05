@@ -13,18 +13,12 @@ use tera::Tera;
 use crate::http::kernel::{register_middlewares, register_routes, setup_cors};
 use crate::models::DBPool;
 
-mod helpers;
+mod core;
 mod http;
-mod macros;
 mod models;
 mod repositories;
 mod schema;
 mod services;
-
-#[derive(Debug, Clone)]
-pub struct AppState {
-    tera: Tera,
-}
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -50,7 +44,6 @@ async fn main() -> std::io::Result<()> {
         .expect("Failed to create pool.");
 
     let tera = Tera::new(concat!(env!("CARGO_MANIFEST_DIR"), "/templates/**/*")).unwrap();
-    let app_state = AppState { tera };
 
     env::set_var("RUST_LOG", "debug");
     env::set_var("RUST_BACKTRACE", "1");
@@ -61,7 +54,7 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .app_data(Data::new(pool.clone()))
-            .app_data(Data::new(app_state.clone()))
+            .app_data(Data::new(tera.clone()))
             .service(Files::new("/static", "./static"))
             .configure(register_routes)
             .configure(register_middlewares)
@@ -74,8 +67,8 @@ async fn main() -> std::io::Result<()> {
                     .body("Page Not Found")
             }))
     })
-        .shutdown_timeout(1)
-        .bind((host, port))?
-        .run()
-        .await
+    .shutdown_timeout(1)
+    .bind((host, port))?
+    .run()
+    .await
 }

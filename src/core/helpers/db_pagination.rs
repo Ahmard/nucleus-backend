@@ -44,9 +44,12 @@ impl<T> Paginated<T> {
         }
     }
 
-    pub fn load_and_count_pages<'a, U>(self, conn: &mut PgConnection) -> QueryResult<PaginationResult<U>>
-        where
-            Self: LoadQuery<'a, PgConnection, (U, i64)>,
+    pub fn load_and_count_pages<'a, U>(
+        self,
+        conn: &mut PgConnection,
+    ) -> QueryResult<PaginationResult<U>>
+    where
+        Self: LoadQuery<'a, PgConnection, (U, i64)>,
     {
         let per_page = self.per_page;
         let results = self.load::<(U, i64)>(conn)?;
@@ -69,8 +72,8 @@ impl<T: Query> Query for Paginated<T> {
 impl<T> RunQueryDsl<PgConnection> for Paginated<T> {}
 
 impl<T> QueryFragment<Pg> for Paginated<T>
-    where
-        T: QueryFragment<Pg>,
+where
+    T: QueryFragment<Pg>,
 {
     fn walk_ast<'b>(&'b self, mut out: AstPass<'_, 'b, Pg>) -> QueryResult<()> {
         out.push_sql("SELECT *, COUNT(*) OVER () FROM (");

@@ -27,7 +27,7 @@ pub fn register_routes(actix_config: &mut ServiceConfig) {
         let path = route.route.as_str();
         log::debug!("Route Group: {}", path);
 
-        if path.len() == 0 {
+        if path.is_empty() {
             actix_config.configure(route.controller);
         } else {
             actix_config.service(web::scope(path).configure(route.controller));

@@ -2,15 +2,15 @@ use core::fmt;
 use std::env;
 use std::future::{ready, Ready};
 
+use crate::models::user::User;
+use crate::models::DBPool;
+use crate::repositories::user_repository::UserRepository;
 use actix_web::error::ErrorUnauthorized;
+use actix_web::web::Data;
 use actix_web::{dev::Payload, Error as ActixWebError};
 use actix_web::{http, FromRequest, HttpMessage, HttpRequest};
-use actix_web::web::Data;
 use jsonwebtoken::{decode, DecodingKey, Validation};
 use serde::Serialize;
-use crate::models::DBPool;
-use crate::models::user::User;
-use crate::repositories::user_repository::UserRepository;
 
 use crate::services::auth_service::TokenClaims;
 
@@ -21,7 +21,7 @@ struct ErrorResponse<'a> {
     message: &'a str,
 }
 
-impl<'a> fmt::Display for ErrorResponse<'_> {
+impl fmt::Display for ErrorResponse<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", serde_json::to_string(&self).unwrap())
     }
@@ -45,9 +45,9 @@ impl FromRequest for AuthMiddleware {
             });
 
         if token.is_none() {
-            return ready(Err(ErrorUnauthorized(
-                make_unauthorized_response("You are not logged in, please provide token")
-            )));
+            return ready(Err(ErrorUnauthorized(make_unauthorized_response(
+                "You are not logged in, please provide token",
+            ))));
         }
 
         let claims = match decode::<TokenClaims>(
@@ -57,33 +57,32 @@ impl FromRequest for AuthMiddleware {
         ) {
             Ok(c) => c.claims,
             Err(_) => {
-                return ready(Err(ErrorUnauthorized(
-                    make_unauthorized_response("Invalid auth token")
-                )));
+                return ready(Err(ErrorUnauthorized(make_unauthorized_response(
+                    "Invalid auth token",
+                ))));
             }
         };
 
         let user_id = uuid::Uuid::parse_str(claims.sub.as_str()).unwrap();
         let pool = req.app_data::<Data<DBPool>>().unwrap();
-        let user_lookup = UserRepository.find_by_id(pool, user_id.clone()).unwrap();
+        let user_lookup = UserRepository.find_by_id(pool, user_id).unwrap();
 
         if user_lookup.is_none() {
-            return ready(Err(ErrorUnauthorized(
-                make_unauthorized_response("Invalid auth token, user not found")
-            )));
+            return ready(Err(ErrorUnauthorized(make_unauthorized_response(
+                "Invalid auth token, user not found",
+            ))));
         }
 
         req.extensions_mut()
             .insert::<uuid::Uuid>(user_id.to_owned());
 
-        req.extensions_mut()
-            .insert::<User>(user_lookup.unwrap());
+        req.extensions_mut().insert::<User>(user_lookup.unwrap());
 
         ready(Ok(AuthMiddleware { user_id }))
     }
 }
 
-fn make_unauthorized_response<'a>(message: &str) -> ErrorResponse {
+fn make_unauthorized_response(message: &str) -> ErrorResponse {
     ErrorResponse {
         success: false,
         status: 401,

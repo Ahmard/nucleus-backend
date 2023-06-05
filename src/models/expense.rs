@@ -1,7 +1,7 @@
 #![allow(clippy::extra_unused_lifetimes)]
 
+use diesel::sql_types::{Nullable, VarChar};
 use diesel::{Associations, Insertable, Queryable, QueryableByName};
-use diesel::sql_types::{VarChar, Nullable};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
