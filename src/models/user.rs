@@ -21,9 +21,9 @@ pub struct User {
 }
 
 pub enum UserStatus {
-    ACTIVE,
-    INACTIVE,
-    PENDING,
+    Active,
+    Inactive,
+    Pending,
 }
 
 #[derive(Serialize, Deserialize)]

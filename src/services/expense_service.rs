@@ -1,10 +1,10 @@
-use crate::models::expense::Expense;
+use crate::core::enums::http_error::DBResult;
+use crate::models::expense::{Expense, ExpenseForm};
 use crate::models::DBPool;
-use crate::repositories::expense_repository::ExpenseRepository;
-use diesel::QueryResult;
-use uuid::Uuid;
 use crate::repositories::budget_repository::BudgetRepository;
+use crate::repositories::expense_repository::ExpenseRepository;
 use crate::services::budget_service::BudgetService;
+use uuid::Uuid;
 
 pub struct ExpenseService;
 
@@ -13,33 +13,25 @@ impl ExpenseService {
         &mut self,
         pool: &DBPool,
         user_id: Uuid,
-        project_id: Uuid,
-        amount: i64,
-        narration: String,
-        spent_at: chrono::NaiveDateTime,
+        form: ExpenseForm,
     ) -> Result<Expense, &'a str> {
-        let result = BudgetRepository.find_owned_current_month_budget(pool, user_id).unwrap();
+        let result = BudgetRepository
+            .find_owned_current_month_budget(pool, user_id)
+            .unwrap();
         if result.is_none() {
             return Err("No budget for current month found");
         }
 
+        let amount = form.amount;
         let mut budget = result.unwrap();
         if amount > budget.available_amount() {
             return Err("This expense exceeds current budget");
         }
 
-        let expense = ExpenseRepository.create(
-            pool,
-            user_id,
-            project_id,
-            budget.budget_id,
-            amount,
-            narration,
-            spent_at,
-        );
+        let expense = ExpenseRepository.create(pool, user_id, budget.budget_id, form);
 
         BudgetService
-            .decrement(pool, &mut budget, amount)
+            .decrement(pool, &budget, amount)
             .expect("Failed to decrement budget");
 
         Ok(expense)
@@ -50,15 +42,12 @@ impl ExpenseService {
         pool: &DBPool,
         id: Uuid,
         user_id: Uuid,
-        project_id: Uuid,
-        amount: i64,
-        narration: String,
-        spent_at: chrono::NaiveDateTime,
-    ) -> QueryResult<Expense> {
-        ExpenseRepository.update(pool, id, user_id, project_id, amount, narration, spent_at)
+        form: ExpenseForm,
+    ) -> DBResult<Expense> {
+        ExpenseRepository.update(pool, id, user_id, form)
     }
 
-    pub fn delete(&mut self, pool: &DBPool, id: Uuid, user_id: Uuid) -> QueryResult<Expense> {
+    pub fn delete(&mut self, pool: &DBPool, id: Uuid, user_id: Uuid) -> DBResult<Expense> {
         ExpenseRepository.delete(pool, id, user_id)
     }
 }

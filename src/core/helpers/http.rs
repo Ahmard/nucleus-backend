@@ -31,23 +31,14 @@ impl QueryParams {
 
     #[allow(dead_code)]
     pub fn get_limit(&mut self) -> i64 {
-        match self.limit.clone() {
-            None => 10,
-            Some(q) => q,
-        }
+        self.limit.unwrap_or(10)
     }
 
     pub fn get_page(&mut self) -> i64 {
-        match self.page.clone() {
-            None => 1,
-            Some(q) => q,
-        }
+        self.page.unwrap_or(1)
     }
 
     pub fn get_per_page(&mut self) -> i64 {
-        match self.per_page.clone() {
-            None => 10,
-            Some(q) => q,
-        }
+        self.per_page.unwrap_or(10)
     }
 }

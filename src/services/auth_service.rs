@@ -1,4 +1,4 @@
-use crate::helpers::string::password_verify;
+use crate::core::helpers::string::password_verify;
 use crate::models::user::UserStatus;
 use crate::models::DBPool;
 use crate::repositories::user_repository::{user_status_is, UserRepository};
@@ -39,15 +39,15 @@ impl AuthService {
 
         let user = user_lookup.unwrap();
 
-        if !password_verify(user.password.clone().as_str(), password.as_str()) {
+        if !password_verify(user.password.as_str(), password.as_str()) {
             return context_less_error_message;
         }
 
-        if user_status_is(user.status.to_owned(), UserStatus::PENDING) {
+        if user_status_is(user.status.to_owned(), UserStatus::Pending) {
             return Err(String::from("Your account is not activated yet"));
         }
 
-        if user_status_is(user.status, UserStatus::INACTIVE) {
+        if user_status_is(user.status, UserStatus::Inactive) {
             return Err(String::from("Your account is not active"));
         }
 
@@ -68,7 +68,7 @@ impl AuthService {
             &claims,
             &EncodingKey::from_secret(env::var("APP_KEY").unwrap().as_ref()),
         )
-            .unwrap();
+        .unwrap();
 
         Ok(AuthAccessData {
             access_token: token,
@@ -77,6 +77,5 @@ impl AuthService {
         })
     }
 
-    pub fn logout(&mut self) {
-    }
+    pub fn logout(&mut self) {}
 }

@@ -1,17 +1,18 @@
-use crate::helpers::auth::get_auth_id;
-use crate::helpers::db::current_timestamp;
-use crate::helpers::http::{IdPathParam, QueryParams};
-use crate::helpers::responder::{json_entity_not_found_response, json_error_message, json_invalid_uuid_response, json_pagination, json_success, json_success_message};
+use crate::core::enums::http_error::ErroneousOption;
+use actix_web::web::{Data, Json, Path, Query, ServiceConfig};
+use actix_web::{delete, get, post, put, HttpMessage, HttpRequest, HttpResponse};
+
+use crate::core::helpers::auth::get_auth_id;
+use crate::core::helpers::http::{IdPathParam, QueryParams};
+use crate::core::helpers::responder::{
+    json_error_message, json_invalid_uuid_response, json_pagination, json_success,
+    json_success_message,
+};
 use crate::http::middlewares::auth_middleware::AuthMiddleware;
 use crate::models::expense::ExpenseForm;
 use crate::models::DBPool;
 use crate::repositories::expense_repository::ExpenseRepository;
 use crate::services::expense_service::ExpenseService;
-use actix_web::web::{Data, Json, Path, Query, ServiceConfig};
-use actix_web::{delete, get, post, put, HttpMessage, HttpRequest, HttpResponse};
-use chrono::NaiveDateTime;
-use std::str::FromStr;
-use uuid::Uuid;
 
 pub fn expense_controller(cfg: &mut ServiceConfig) {
     cfg.service(index);
@@ -54,14 +55,7 @@ async fn create(
     _: AuthMiddleware,
 ) -> HttpResponse {
     let user_id = get_auth_id(req.extensions());
-    let result = ExpenseService.create(
-        pool.get_ref(),
-        user_id,
-        Uuid::from_str(form.project_id.as_str()).unwrap(),
-        form.amount.clone(),
-        form.narration.clone(),
-        get_spending_time(form.spent_at.clone()),
-    );
+    let result = ExpenseService.create(pool.get_ref(), user_id, form.into_inner());
 
     if result.is_err() {
         return json_error_message(result.err().unwrap());
@@ -88,8 +82,8 @@ async fn show(
         get_auth_id(req.extensions()),
     );
 
-    if result.is_err() {
-        return json_entity_not_found_response("expense");
+    if result.is_error_or_empty() {
+        return result.send_error();
     }
 
     json_success(result.unwrap())
@@ -112,10 +106,7 @@ async fn update(
         pool.get_ref(),
         id.unwrap(),
         get_auth_id(req.extensions()),
-        Uuid::from_str(form.project_id.as_str()).unwrap(),
-        form.amount.clone(),
-        form.narration.clone(),
-        get_spending_time(form.spent_at.clone()),
+        form.into_inner(),
     );
 
     if result.is_err() {
@@ -142,12 +133,4 @@ async fn delete(
         .expect("Failed to delete expense");
 
     json_success_message("expense deleted")
-}
-
-fn get_spending_time(spent_at: Option<String>) -> NaiveDateTime {
-    let spending_time = spent_at.clone();
-    match spending_time {
-        None => current_timestamp(),
-        Some(val) => NaiveDateTime::parse_from_str(val.as_str(), "%Y-%m-%d %H:%M:%S").unwrap(),
-    }
 }

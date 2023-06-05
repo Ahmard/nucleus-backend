@@ -1,10 +1,12 @@
+use crate::core::helpers::auth::get_auth_user;
 use actix_web::http::StatusCode;
 use actix_web::web::{Data, Json, ServiceConfig};
 use actix_web::{get, post, HttpMessage, HttpRequest, HttpResponse};
 use diesel::result::DatabaseErrorInformation;
-use crate::helpers::auth::{get_auth_user};
 
-use crate::helpers::responder::{json, json_error_message, json_success, json_success_message, json_unauthorized_message};
+use crate::core::helpers::responder::{
+    json, json_error_message, json_success, json_success_message, json_unauthorized_message,
+};
 use crate::http::middlewares::auth_middleware::AuthMiddleware;
 use crate::models::DBPool;
 
