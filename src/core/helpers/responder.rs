@@ -1,11 +1,8 @@
-use crate::AppState;
-use actix_web::body::BoxBody;
-use actix_web::http::header::ContentType;
 use actix_web::http::StatusCode;
-use actix_web::web::Data;
-use actix_web::{HttpRequest, HttpResponse, Responder as ActixResponder};
+use actix_web::HttpResponse;
 use serde::{Deserialize, Serialize};
-use tera::Context;
+
+use crate::core::helpers::db_pagination::PaginationResult;
 
 #[derive(Serialize, Deserialize)]
 pub struct JsonResponse<T: Serialize> {
@@ -18,7 +15,8 @@ pub struct JsonResponse<T: Serialize> {
 pub struct JsonPaginationResponse<T: Serialize> {
     success: bool,
     data: T,
-    pages: i64,
+    total_pages: i64,
+    total_records: i64,
     status: u16,
 }
 
@@ -42,14 +40,14 @@ pub fn json_success<T: Serialize>(data: T) -> HttpResponse {
     )
 }
 
-pub fn json_pagination<T: Serialize>(data: (T, i64)) -> HttpResponse {
-
+pub fn json_pagination<T: Serialize>(data: PaginationResult<T>) -> HttpResponse {
     json(
         JsonPaginationResponse {
             success: true,
             status: 200,
-            data: data.0,
-            pages: data.1,
+            data: data.records,
+            total_pages: data.total_pages,
+            total_records: data.total_records,
         },
         StatusCode::OK,
     )
@@ -93,42 +91,10 @@ pub fn json_invalid_uuid_response() -> HttpResponse {
     json_error_message("Your provided ID is invalid, please inspect it")
 }
 
+pub fn json_not_found_response(message: Option<&str>) -> HttpResponse {
+    json_error_message_status(message.unwrap_or("Not Found"), StatusCode::NOT_FOUND)
+}
+
 pub fn json_entity_not_found_response(entity: &str) -> HttpResponse {
-    json_error_message(format!("Such {} does not exists", entity).as_str())
-}
-
-pub enum Responder {
-    HtmlTemplate(String, Context, StatusCode),
-    Redirect(String, StatusCode),
-}
-
-impl ActixResponder for Responder {
-    type Body = BoxBody;
-
-    fn respond_to(self, req: &HttpRequest) -> HttpResponse<Self::Body> {
-        match self {
-            Responder::Redirect(location, status) => HttpResponse::build(status)
-                .append_header(("Location", location))
-                .finish(),
-            Responder::HtmlTemplate(file, data, status) => {
-                let mut filename = file.to_owned();
-                if !filename.ends_with(".tera.html") {
-                    filename.push_str(".tera.html");
-                }
-
-                let app_state = req.app_data::<Data<AppState>>().unwrap();
-                let html = match app_state.tera.render(&filename, &data) {
-                    Ok(string) => string,
-                    Err(error) => {
-                        eprintln!("Failed to render template: {}", error);
-                        ::std::process::exit(1);
-                    }
-                };
-
-                HttpResponse::build(status)
-                    .content_type(ContentType::html())
-                    .body(html)
-            }
-        }
-    }
+    json_not_found_response(Some(format!("Such {} does not exists", entity).as_str()))
 }

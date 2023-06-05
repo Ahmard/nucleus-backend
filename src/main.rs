@@ -13,18 +13,12 @@ use tera::Tera;
 use crate::http::kernel::{register_middlewares, register_routes, setup_cors};
 use crate::models::DBPool;
 
-mod helpers;
+mod core;
 mod http;
-mod macros;
 mod models;
 mod repositories;
 mod schema;
 mod services;
-
-#[derive(Debug, Clone)]
-pub struct AppState {
-    tera: Tera,
-}
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -32,7 +26,16 @@ async fn main() -> std::io::Result<()> {
 
     let host: String = env::var("HOST").unwrap();
     let port: u16 = env::var("PORT").unwrap().parse().unwrap();
-    let db_url: String = env::var("DATABASE_URL").unwrap();
+
+    let db_url: String = format!(
+        "{}://{}:{}@{}:{}/{}",
+        env::var("DB_DRIVER").unwrap(),
+        env::var("DB_USERNAME").unwrap(),
+        env::var("DB_PASSWORD").unwrap(),
+        env::var("DB_HOST").unwrap(),
+        env::var("DB_PORT").unwrap(),
+        env::var("DB_DATABASE").unwrap(),
+    );
 
     // create db connection pool
     let manager = ConnectionManager::<PgConnection>::new(db_url);
@@ -41,7 +44,6 @@ async fn main() -> std::io::Result<()> {
         .expect("Failed to create pool.");
 
     let tera = Tera::new(concat!(env!("CARGO_MANIFEST_DIR"), "/templates/**/*")).unwrap();
-    let app_state = AppState { tera };
 
     env::set_var("RUST_LOG", "debug");
     env::set_var("RUST_BACKTRACE", "1");
@@ -52,7 +54,7 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .app_data(Data::new(pool.clone()))
-            .app_data(Data::new(app_state.clone()))
+            .app_data(Data::new(tera.clone()))
             .service(Files::new("/static", "./static"))
             .configure(register_routes)
             .configure(register_middlewares)
