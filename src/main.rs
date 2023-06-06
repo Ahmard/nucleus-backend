@@ -37,6 +37,8 @@ async fn main() -> std::io::Result<()> {
         env::var("DB_DATABASE").unwrap(),
     );
 
+    println!("DB URL: {}", db_url.clone());
+
     // create db connection pool
     let manager = ConnectionManager::<PgConnection>::new(db_url);
     let pool: DBPool = r2d2::Pool::builder()

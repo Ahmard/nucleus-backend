@@ -1,23 +1,18 @@
-# ---------------------------------------------------
-# 1 - Build Stage
-#
-# Use official rust image to for application build
-# ---------------------------------------------------
-FROM rust:1.69 as planner
+# Build
+FROM rust:1.70 as planner
 RUN cargo install cargo-chef
 
-# Setup working directory
+# Set work directory
 WORKDIR /usr/src/nucleus-backend
 COPY . .
-COPY .env.example .env
 
 # Prepare a build plan ("recipe")
 RUN cargo chef prepare --recipe-path recipe.json
 
-FROM rust:1.69 as build
+FROM rust:1.70 as build
 RUN cargo install cargo-chef
 
-# Install dependency (Required by diesel)
+# Install postgres library
 RUN apt-get update && apt-get install libpq5 -y
 
 # Copy the build plan from the previous Docker stage
@@ -29,29 +24,28 @@ RUN cargo chef cook --recipe-path recipe.json
 
 # Build the whole project
 COPY . .
-COPY .env.example .env
+
+# Setup working directory
+WORKDIR /nucleus
+
+# Build application
+RUN cargo build --release
+
+# BUILD
+FROM rust:1.70 AS runtime
 
 # Install dependency (Required by diesel)
 RUN apt-get update && apt-get install libpq5 -y
 
-# Build application
-RUN cargo install --path .
+# Install Diesel CLI
+RUN cargo install diesel_cli --no-default-features --features postgres
 
-# ---------------------------------------------------
-# 2 - Deploy Stage
-#
-# Use a distroless image for minimal container size
-# - Copy `libpq` dependencies into the image (Required by diesel)
-# - Copy application files into the image
-# ---------------------------------------------------
-FROM gcr.io/distroless/cc-debian11
+COPY .env .env
+COPY static static
+COPY templates templates
+COPY migrations migrations
 
-# Set the architecture argument (arm64, i.e. aarch64 as default)
-# For amd64, i.e. x86_64, you can append a flag when invoking the build `... --build-arg "ARCH=x86_64"`
-ARG ARCH=aarch64
+# Copy our built binary
+COPY --from=build /target/release/nucleus /usr/local/bin/nucleus
 
-# Application files
-COPY --from=build /usr/local/cargo/bin/nucleus /usr/local/bin/nucleus
-#COPY --from=build /usr/src/nucleus-backend/.env /.env
-
-CMD ["/usr/local/bin/nucleus"]
+CMD ["nucleus"]
