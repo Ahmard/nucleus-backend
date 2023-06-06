@@ -1,0 +1,41 @@
+version: '3'
+
+services:
+  nucleus-backend-api:
+    container_name: nucleus-backend
+    restart: always
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      DB_HOST: "nucleus-database"
+      DB_PORT: "${DB_PORT}"
+    ports:
+      - "${PORT}:${PORT}"
+    depends_on:
+      - nucleus-database
+    networks:
+      - main
+
+  nucleus-backend-db:
+    container_name: nucleus-database
+    restart: always
+    image: postgres:15.3-alpine3.18
+    environment:
+      POSTGRES_DB: "${DB_DATABASE}"
+      POSTGRES_USER: "${DB_USERNAME}"
+      POSTGRES_PASSWORD: "${DB_PASSWORD}"
+    volumes:
+      - database-data:/var/lib/postgresql/data
+    env_file:
+      - .env
+    networks:
+      - main
+
+volumes:
+  database-data:
+networks:
+  main:
+    driver: bridge
